@@ -1,0 +1,193 @@
+# Phrases CombatHUD can say, recorded by tools/make_voices.ps1.
+# One per line; lines starting with # are comments.
+#
+# [alerts] are general phrases you can pick for any sound ("Say a phrase").
+# [spells] are names said by "Say its name": when a buff, debuff or proc of
+# that name starts or ends. A name missing here falls back to a general
+# phrase ("Buff gone"), so add any you want and run the script again.
+
+[alerts]
+Shield down
+Shield up
+Charges gone
+Buff gone
+Buff up
+Debuff gone
+Debuff up
+Refresh
+Recast
+Missing
+Ready
+Proc
+Totem down
+Out of range
+
+[spells]
+# Shaman
+Lightning Shield
+Water Shield
+Earth Shield
+Flame Shock
+Frost Shock
+Earth Shock
+Stormstrike
+Elemental Mastery
+Nature's Swiftness
+Clearcasting
+Flurry
+Shamanistic Rage
+Maelstrom Weapon
+Power Surge
+Tidal Waves
+Healing Way
+Ancestral Fortitude
+
+# Priest
+Power Word: Shield
+Inner Fire
+Fear Ward
+Shadowform
+Power Word: Fortitude
+Divine Spirit
+Shadow Protection
+Inner Focus
+Renew
+Shadow Word: Pain
+Vampiric Embrace
+Spirit Tap
+Surge of Light
+Serendipity
+
+# Mage
+Ice Barrier
+Mana Shield
+Fire Ward
+Frost Ward
+Ice Armor
+Frost Armor
+Mage Armor
+Molten Armor
+Arcane Intellect
+Presence of Mind
+Arcane Power
+Combustion
+Icy Veins
+Fingers of Frost
+Brain Freeze
+Hot Streak
+Missile Barrage
+Arcane Blast
+
+# Warlock
+Shadow Ward
+Demon Armor
+Demon Skin
+Fel Armor
+Soul Link
+Shadow Trance
+Molten Core
+Backdraft
+Corruption
+Curse of Agony
+Immolate
+Siphon Life
+Curse of the Elements
+Curse of Shadow
+Curse of Recklessness
+
+# Paladin
+Blessing of Might
+Blessing of Wisdom
+Blessing of Kings
+Blessing of Salvation
+Blessing of Light
+Blessing of Sanctuary
+Righteous Fury
+Holy Shield
+Divine Shield
+Divine Favor
+Seal of Righteousness
+Seal of Command
+Seal of the Crusader
+Seal of Light
+Seal of Wisdom
+Seal of Justice
+Art of War
+Infusion of Light
+Sacred Shield
+
+# Warrior
+Battle Shout
+Demoralizing Shout
+Sunder Armor
+Rend
+Thunder Clap
+Shield Block
+Bloodrage
+Enrage
+Sweeping Strikes
+Death Wish
+Recklessness
+Shield Wall
+Last Stand
+Retaliation
+Berserker Rage
+Overpower
+Revenge
+Execute
+Sudden Death
+Blood Surge
+
+# Hunter
+Aspect of the Hawk
+Aspect of the Monkey
+Aspect of the Cheetah
+Aspect of the Pack
+Aspect of the Wild
+Trueshot Aura
+Rapid Fire
+Quick Shots
+Hunter's Mark
+Serpent Sting
+Bestial Wrath
+Lock and Load
+Mongoose Bite
+Counterattack
+
+# Rogue
+Slice and Dice
+Blade Flurry
+Adrenaline Rush
+Evasion
+Sprint
+Cold Blood
+Rupture
+Garrote
+Expose Armor
+Riposte
+
+# Druid
+Mark of the Wild
+Thorns
+Omen of Clarity
+Barkskin
+Innervate
+Tiger's Fury
+Rejuvenation
+Regrowth
+Lifebloom
+Moonfire
+Insect Swarm
+Faerie Fire
+Rake
+Rip
+Savage Roar
+Nature's Grasp
+Frenzied Regeneration
+Eclipse
+
+# Racials and items
+Blood Fury
+Berserking
+Stoneform
+Will of the Forsaken

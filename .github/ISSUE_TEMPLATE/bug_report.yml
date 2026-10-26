@@ -1,0 +1,83 @@
+name: Bug report
+description: Something in CombatHUD doesn't work or shows the wrong thing.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. The most useful thing you can add is the output of **`/chud report`**: type it in game, press **Ctrl+C** in the box that opens, and paste it below. It has your version, your settings and what the HUD sees from the game.
+
+  - type: input
+    id: version
+    attributes:
+      label: CombatHUD version
+      description: "`/chud version` in game."
+      placeholder: "0.18.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: class
+    attributes:
+      label: Class
+      options:
+        - Druid
+        - Hunter
+        - Mage
+        - Paladin
+        - Priest
+        - Rogue
+        - Shaman
+        - Warlock
+        - Warrior
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected to see instead. Screenshots help a lot (drag them in).
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen
+      description: The steps, if you know them.
+      placeholder: |
+        1. Put Flame Shock on the target
+        2. Cast Frost Shock
+        3. The shock button shows ...
+
+  - type: dropdown
+    id: combat
+    attributes:
+      label: In or out of combat?
+      description: Many values are hidden from addons in combat, so this matters.
+      options:
+        - In combat
+        - Out of combat
+        - Both
+        - Not sure
+
+  - type: textarea
+    id: report
+    attributes:
+      label: /chud report
+      description: Paste everything from the `/chud report` box.
+      render: text
+
+  - type: textarea
+    id: errors
+    attributes:
+      label: Lua errors
+      description: If you got one, paste it here. [BugSack](https://www.curseforge.com/wow/addons/bugsack) with BugGrabber catches errors with the details needed to fix them.
+      render: text
+
+  - type: textarea
+    id: addons
+    attributes:
+      label: Other addons
+      description: Other addons you use that change action bars, unit frames, cast bars or auras (Bartender, ElvUI, ...), if any.

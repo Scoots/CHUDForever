@@ -1,0 +1,48 @@
+## Interface: 16001
+## Title: CombatHUD
+## Notes: Lightweight, display-only combat HUD: cooldowns, power, auras and procs.
+## Version: 0.19.0-beta1
+## IconTexture: Interface\AddOns\CombatHUD\Media\Icon
+## Category: Interface
+## X-Category: Interface
+## SavedVariables: CombatHUDDB
+## AddonCompartmentFunc: CombatHUD_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: CombatHUD_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: CombatHUD_OnAddonCompartmentLeave
+
+Core.lua
+API.lua
+Groups.lua
+Alerts.lua
+Defaults.lua
+Learn.lua
+Glow.lua
+Button.lua
+Aura.lua
+Debuff.lua
+VoiceList.lua
+Sounds.lua
+Charges.lua
+Absorb.lua
+Totem.lua
+Weapons.lua
+Starter.lua
+Range.lua
+Bar.lua
+Meter.lua
+PowerBar.lua
+HealthBar.lua
+SwingBar.lua
+CastBar.lua
+FiveSecond.lua
+Visibility.lua
+Menu.lua
+Popover.lua
+EditMenu.lua
+Modules.lua
+Options.lua
+Share.lua
+Profile.lua
+Report.lua
+QuickSetup.lua
+Launcher.lua

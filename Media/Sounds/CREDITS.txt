@@ -1,0 +1,12 @@
+Sounds in this folder, copied from ForeverAuras (Media/Sounds), which took them from soundbible.com and opengameart.org.
+
+HeartbeatSingle.ogg - Creative Commons CC0 1.0 - original by bart (https://opengameart.org/content/heartbeat-sounds), modified by Jieiku (https://github.com/Jieiku)
+RobotBlip.ogg       - Creative Commons Attribution 3.0 - Marianne Gagnon
+TempleBellHuge.ogg  - Creative Commons Attribution 3.0 - Mike Koenig
+WarningSiren.ogg    - Creative Commons Attribution 3.0 - snottyboy
+WaterDrop.ogg       - Creative Commons Attribution 3.0 - Mike Koenig
+
+Attribution 3.0: https://creativecommons.org/licenses/by/3.0/
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+The sounds are unchanged.

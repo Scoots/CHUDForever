@@ -1,0 +1,6 @@
+# Left out of `git archive` zips (the CurseForge upload): repository and
+# developer files the game doesn't need.
+.github/        export-ignore
+tools/          export-ignore
+.gitignore      export-ignore
+.gitattributes  export-ignore
