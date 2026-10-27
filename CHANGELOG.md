@@ -2,6 +2,12 @@
 
 All notable changes to CHUDForever. Versions follow the `## Version` line in `CHUDForever.toc`.
 
+## [0.19.0-beta2] - 10/27/2026
+
+### Changed
+
+- The addon is now called **CHUDForever**, the same as its CurseForge page: its folder is `CHUDForever` (it was `CombatHUD`). If you installed beta1, delete the old `Interface\AddOns\CombatHUD` folder. Settings are saved per addon folder, so they start fresh; to keep yours, copy `WTF\Account\<account>\SavedVariables\CombatHUD.lua` to `CHUDForever.lua` there (with the game closed).
+
 ## [0.19.0-beta1] - 10/26/2026 first public beta
 
 The first build for everyone. See the [README](README.md) for what CHUDForever does.
