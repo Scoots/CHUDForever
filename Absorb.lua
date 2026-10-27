@@ -31,7 +31,7 @@ local Absorb = {}
 ns.Absorb = Absorb
 
 local WHITE = ns.WHITE
-local ART = "Interface\\AddOns\\CombatHUD\\Media\\Charges\\"
+local ART = ns.MEDIA .. "Charges\\"
 local SLICES = 24 -- pieces of a bent plain bar
 
 -- { key, label, r, g, b }

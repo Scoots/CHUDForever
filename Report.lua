@@ -37,7 +37,7 @@ end
 
 local function Header(out)
   local version, build, date, toc = GetBuildInfo()
-  out[#out + 1] = "CombatHUD " .. ns.Version()
+  out[#out + 1] = "CHUDForever " .. ns.Version()
   out[#out + 1] = ("Game: %s (build %s, %s), interface %s"):format(Show(version), Show(build), Show(date), Show(toc))
   local _, class = UnitClass("player")
   local _, race = UnitRace("player")
@@ -100,6 +100,6 @@ function Report.Build()
 end
 
 function Report.Show()
-  ns.Share.ShowText("CombatHUD report",
+  ns.Share.ShowText("CHUDForever report",
     "Press Ctrl+C to copy, then paste it into your bug report. Nothing is sent anywhere.", Report.Build())
 end

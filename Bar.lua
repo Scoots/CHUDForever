@@ -359,7 +359,7 @@ local function Drop(frame)
   if entry.spell and (kind == "buffs" or kind == "alerts" or kind == "charges") then
     local name = C_Spell.GetSpellName(entry.spell)
     if name and not ns.Learn.Linked(name) then
-      ns.Print(("If %s's buff doesn't show while it's up, cast %s once out of combat and CombatHUD will learn which buff it gives."):format(name, name))
+      ns.Print(("If %s's buff doesn't show while it's up, cast %s once out of combat and CHUDForever will learn which buff it gives."):format(name, name))
     end
   end
 end

@@ -1,5 +1,5 @@
 <#
-Records CombatHUD's spoken alerts with the voices Windows has (the same ones
+Records CHUDForever's spoken alerts with the voices Windows has (the same ones
 the game's text-to-speech uses), one MP3 per phrase and voice:
 
   Media\Voice\Female\<Phrase>.mp3   Microsoft Zira
@@ -145,7 +145,7 @@ $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
 $installed = $synth.GetInstalledVoices() | ForEach-Object { $_.VoiceInfo.Name }
 $format = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(44100,
   [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono)
-$work = Join-Path ([System.IO.Path]::GetTempPath()) "CombatHUDVoice"
+$work = Join-Path ([System.IO.Path]::GetTempPath()) "CHUDForeverVoice"
 New-Item -ItemType Directory -Force $work | Out-Null
 $wav = Join-Path $work "phrase.wav"
 $made = 0

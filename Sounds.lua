@@ -14,8 +14,8 @@ local _, ns = ...
 local Sounds = {}
 ns.Sounds = Sounds
 
-local SOUNDS_DIR = "Interface\\AddOns\\CombatHUD\\Media\\Sounds\\"
-local VOICE_DIR = "Interface\\AddOns\\CombatHUD\\Media\\Voice\\"
+local SOUNDS_DIR = ns.MEDIA .. "Sounds\\"
+local VOICE_DIR = ns.MEDIA .. "Voice\\"
 
 Sounds.LIST = {
   { "none", "None" },

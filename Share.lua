@@ -184,7 +184,7 @@ end
 function Share.DecodeBar(text)
   local bar, problem = Unpack(text, BAR_PREFIX, BAR_PREFIX_PACKED)
   if problem == false then
-    return nil, "That isn't a CombatHUD bar string (a profile string goes in \"Import a profile\")."
+    return nil, "That isn't a CHUDForever bar string (a profile string goes in \"Import a profile\")."
   end
   if not bar then return nil, problem end
   if type(bar) ~= "table" then return nil, "That string has no bar in it." end
@@ -199,7 +199,7 @@ end
 -- The profile in a string, or nil and what's wrong with it.
 function Share.Decode(text)
   local result, problem = Unpack(text, PREFIX, PREFIX_PACKED)
-  if problem == false then return nil, "That isn't a CombatHUD profile string." end
+  if problem == false then return nil, "That isn't a CHUDForever profile string." end
   if not result then return nil, problem end
   if type(result) ~= "table" or type(result.bars) ~= "table" then return nil, "That string has no bars in it." end
   for _, bar in ipairs(result.bars) do
@@ -316,7 +316,7 @@ end
 function Share.ShowImportBar(profileName)
   if not popup then Create() end
   popup.title:SetText("Import a bar into " .. tostring(profileName))
-  popup.hint:SetText("Paste a CombatHUD bar string (Ctrl+V), then import it.")
+  popup.hint:SetText("Paste a CHUDForever bar string (Ctrl+V), then import it.")
   popup.action.text:SetText("Add it to " .. tostring(profileName))
   popup.action:SetScript("OnClick", function()
     local bar, problem = Share.DecodeBar(popup.box:GetText())
@@ -340,7 +340,7 @@ end
 function Share.ShowImport()
   if not popup then Create() end
   popup.title:SetText("Import a profile")
-  popup.hint:SetText("Paste a CombatHUD profile string (Ctrl+V), then import it.")
+  popup.hint:SetText("Paste a CHUDForever profile string (Ctrl+V), then import it.")
   popup.action.text:SetText("Import as a new profile")
   popup.action:SetScript("OnClick", function()
     local profile, problem = Share.Decode(popup.box:GetText())

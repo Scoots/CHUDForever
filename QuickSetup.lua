@@ -178,7 +178,7 @@ local function Create()
 
   local title = window:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
   title:SetPoint("TOPLEFT", 16, -14)
-  title:SetText("Set up CombatHUD")
+  title:SetText("Set up CHUDForever")
   local intro = window:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   intro:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
   intro:SetWidth(428)

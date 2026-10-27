@@ -1,4 +1,4 @@
-# Phrases CombatHUD can say, recorded by tools/make_voices.ps1.
+# Phrases CHUDForever can say, recorded by tools/make_voices.ps1.
 # One per line; lines starting with # are comments.
 #
 # [alerts] are general phrases you can pick for any sound ("Say a phrase").

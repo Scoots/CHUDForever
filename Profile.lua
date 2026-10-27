@@ -127,7 +127,7 @@ local function SelectProfile()
   local db = CombatHUDDB
   local specKey, _, source = ns.GetSpec()
   local name = settings.profile
-  local brandNew = next(settings) == nil -- a character CombatHUD hasn't seen before
+  local brandNew = next(settings) == nil -- a character CHUDForever hasn't seen before
   if not name or not db.profiles[name] then
     local others
     name, others = FromSpecProfiles(settings, specKey)
@@ -355,7 +355,7 @@ local function EditBar()
   bg:SetColorTexture(0.06, 0.06, 0.09, 0.95)
   local text = editBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   text:SetPoint("LEFT", 10, 0)
-  text:SetText("CombatHUD edit mode")
+  text:SetText("CHUDForever edit mode")
 
   local done = CreateFrame("Button", nil, editBar)
   done:SetSize(84, 20)
@@ -704,10 +704,10 @@ function ns.PrintDiag()
   ns.Print(("Stormstrike (17364): %s"):format(ns.DescribeSpellKnown(17364)))
 end
 
--- /chud perf: memory and CPU of CombatHUD next to ForeverAuras, to compare.
+-- /chud perf: memory and CPU of CHUDForever next to ForeverAuras, to compare.
 -- CPU is only counted while the game's script profiling is on (it slows
 -- the game a little, so it's off by default).
-local COMPARE = { "CombatHUD", "ForeverAuras", "ForeverAurasOptions", "WeakAuras", "WeakAurasOptions" }
+local COMPARE = { ns.name, "ForeverAuras", "ForeverAurasOptions", "WeakAuras", "WeakAurasOptions" }
 local perfSince
 
 local function PrintPerf(argument)
@@ -751,7 +751,7 @@ local HELP = {
   "/chud edit - move bars and drop spells or items on them (also /chud lock, /chud unlock)",
   "/chud reset - reset this character's profile to the defaults (asks first)",
   "/chud report - everything a bug report needs, ready to copy",
-  "/chud version - which version of CombatHUD this is",
+  "/chud version - which version of CHUDForever this is",
   "/chud debug - commands for troubleshooting",
 }
 

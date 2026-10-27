@@ -10,7 +10,7 @@ local _, ns = ...
 local Launcher = {}
 ns.Launcher = Launcher
 
-local ICON = "Interface\\AddOns\\CombatHUD\\Media\\Icon"
+local ICON = ns.MEDIA .. "Icon"
 
 local function CloseGameOptions()
   if InCombatLockdown() then return end
@@ -31,7 +31,7 @@ end
 
 local function Tooltip(owner)
   GameTooltip:SetOwner(owner, "ANCHOR_LEFT")
-  GameTooltip:SetText("CombatHUD " .. ns.Version())
+  GameTooltip:SetText("CHUDForever " .. ns.Version())
   GameTooltip:AddLine("Left-click: settings", 1, 1, 1)
   GameTooltip:AddLine("Right-click: move bars and add spells", 1, 1, 1)
   GameTooltip:Show()
@@ -115,11 +115,11 @@ end
 
 local function RegisterOptionsPanel()
   local panel = CreateFrame("Frame")
-  panel.name = "CombatHUD"
+  panel.name = "CHUDForever"
 
   local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
   title:SetPoint("TOPLEFT", 16, -16)
-  title:SetText("CombatHUD")
+  title:SetText("CHUDForever")
   local version = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
   version:SetPoint("LEFT", title, "RIGHT", 8, -1)
   version:SetText(ns.Version())
@@ -127,10 +127,10 @@ local function RegisterOptionsPanel()
   about:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
   about:SetWidth(560)
   about:SetJustifyH("LEFT")
-  about:SetText("CombatHUD has its own settings window, with every bar and its buttons. "
+  about:SetText("CHUDForever has its own settings window, with every bar and its buttons. "
     .. "To move bars or add spells, edit the HUD: drag bars, drop spells or items on them, and right-click for options.")
 
-  local open = NewButton(panel, "Open CombatHUD Settings", Launcher.OpenSettings)
+  local open = NewButton(panel, "Open CHUDForever Settings", Launcher.OpenSettings)
   open:SetPoint("TOPLEFT", about, "BOTTOMLEFT", 0, -16)
   local edit = NewButton(panel, "Move Bars and Add Spells", Launcher.ToggleEdit)
   edit:SetPoint("LEFT", open, "RIGHT", 12, 0)

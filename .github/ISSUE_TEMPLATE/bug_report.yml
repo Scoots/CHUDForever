@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in CombatHUD doesn't work or shows the wrong thing.
+description: Something in CHUDForever doesn't work or shows the wrong thing.
 labels: ["bug"]
 body:
   - type: markdown
@@ -10,7 +10,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: CombatHUD version
+      label: CHUDForever version
       description: "`/chud version` in game."
       placeholder: "0.18.1"
     validations:

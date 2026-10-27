@@ -1,8 +1,8 @@
-# CombatHUD
+# CHUDForever
 
 A lightweight, display-only combat HUD for **WoW Forever**: cooldowns, procs, buffs and debuffs, totems, power, health, cast bar and swing timer, arranged around your character. It's built to replace ForeverAuras/WeakAuras-style setups without the setup work: every class gets a ready-made layout, and you change it by dragging spells onto bars.
 
-> **Beta.** CombatHUD is in public beta. Things will break; please [report them](#reporting-bugs).
+> **Beta.** CHUDForever is in public beta. Things will break; please [report them](#reporting-bugs).
 
 ## Features
 
@@ -23,7 +23,7 @@ Everything is click-through, so your keybinds stay on your normal (or hidden) ac
 
 ### Built for the WoW Forever client
 
-The client runs on a modern engine where many combat values are hidden from addons: cooldown times, auras, power, sometimes even your own spell IDs. CombatHUD never reads those values. It hands them to the game's own widgets to draw, so everything keeps working in combat. A few things the game hides completely are estimated instead, and the settings say where.
+The client runs on a modern engine where many combat values are hidden from addons: cooldown times, auras, power, sometimes even your own spell IDs. CHUDForever never reads those values. It hands them to the game's own widgets to draw, so everything keeps working in combat. A few things the game hides completely are estimated instead, and the settings say where.
 
 ## Installing
 
@@ -33,7 +33,7 @@ The client runs on a modern engine where many combat values are hidden from addo
 
 1. Download the latest release zip (or the source zip) from GitHub.
 2. Put the folder in `World of Warcraft\_forever_\Interface\AddOns\`.
-3. **Name the folder `CombatHUD`.** A source zip unpacks as `CHUDForever-master`; rename it, or the game won't load it.
+3. **Name the folder `CHUDForever`.** A source zip unpacks as `CHUDForever-master`; rename it, or the game won't load it.
 4. Restart the game (a `/reload` isn't enough for new sound files).
 
 ## Getting started

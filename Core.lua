@@ -2,9 +2,11 @@
 local ADDON, ns = ...
 
 ns.name = ADDON
+-- The addon's own media folder, whatever the addon's folder is called.
+ns.MEDIA = "Interface\\AddOns\\" .. ADDON .. "\\Media\\"
 
 function ns.Print(...)
-  print("|cff33ccffCombatHUD|r:", ...)
+  print("|cff33ccffCHUDForever|r:", ...)
 end
 
 -- Runs fn, reporting an error the usual way without stopping the caller: one

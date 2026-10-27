@@ -2436,7 +2436,7 @@ local function Create()
 
   window.title = window:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
   window.title:SetPoint("TOPLEFT", 12, -10)
-  window.title:SetText("CombatHUD")
+  window.title:SetText("CHUDForever")
   window.profile = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   window.profile:SetPoint("LEFT", window.title, "RIGHT", 10, -1)
 

@@ -59,10 +59,10 @@ ns.Aura = {
   end,
 }
 
-assert(loadfile("Defaults.lua"))("CombatHUD", ns)
-assert(loadfile("Groups.lua"))("CombatHUD", ns)
-assert(loadfile("Alerts.lua"))("CombatHUD", ns)
-assert(loadfile("Modules.lua"))("CombatHUD", ns)
+assert(loadfile("Defaults.lua"))("CHUDForever", ns)
+assert(loadfile("Groups.lua"))("CHUDForever", ns)
+assert(loadfile("Alerts.lua"))("CHUDForever", ns)
+assert(loadfile("Modules.lua"))("CHUDForever", ns)
 local Modules, Groups, Alerts = ns.Modules, ns.Groups, ns.Alerts
 
 local function Module(id) return Modules.Get(id) end

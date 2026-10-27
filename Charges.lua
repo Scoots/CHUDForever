@@ -16,7 +16,7 @@ ns.Charges = Charges
 
 local SLOT = "Charges"
 local WHITE = ns.WHITE
-local ART = "Interface\\AddOns\\CombatHUD\\Media\\Charges\\"
+local ART = ns.MEDIA .. "Charges\\"
 local COLOR = { 0.35, 0.65, 1 }
 
 -- Orb themes and gem colors: { key, label }.

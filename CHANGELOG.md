@@ -1,10 +1,10 @@
 # Changelog
 
-All notable changes to CombatHUD. Versions follow the `## Version` line in `CombatHUD.toc`.
+All notable changes to CHUDForever. Versions follow the `## Version` line in `CHUDForever.toc`.
 
 ## [0.19.0-beta1] - 10/26/2026 first public beta
 
-The first build for everyone. See the [README](README.md) for what CombatHUD does.
+The first build for everyone. See the [README](README.md) for what CHUDForever does.
 
 ### Added
 

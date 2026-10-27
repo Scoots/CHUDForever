@@ -1,4 +1,4 @@
-"""Draws the textures for CombatHUD's charge bars, in Media/Charges/.
+"""Draws the textures for CHUDForever's charge bars, in Media/Charges/.
 
 Orbs, one pair per theme: orb_<theme>_full.tga (lit) and orb_<theme>_empty.tga
 (spent, a grayscale ball with faint traces of the same pattern).

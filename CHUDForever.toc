@@ -1,8 +1,8 @@
 ## Interface: 16001
-## Title: CombatHUD
+## Title: CHUDForever
 ## Notes: Lightweight, display-only combat HUD: cooldowns, power, auras and procs.
 ## Version: 0.19.0-beta1
-## IconTexture: Interface\AddOns\CombatHUD\Media\Icon
+## IconTexture: Interface\AddOns\CHUDForever\Media\Icon
 ## Category: Interface
 ## X-Category: Interface
 ## SavedVariables: CombatHUDDB
