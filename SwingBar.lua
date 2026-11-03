@@ -314,14 +314,13 @@ local function WeaponIn(slot)
   return ok and not issecret(classID) and classID == 2 -- Weapon (not a shield or a held item)
 end
 
-local _, playerClass = UnitClass("player")
-
 -- The rows to show, in order. Auto: the main hand, the off hand while you
 -- dual wield, the ranged weapon for hunters (others can tick Ranged).
 local function ShownHands()
   local shown = {}
   if not config then return shown end
   local hands = config.hands or {}
+  local _, playerClass = UnitClass("player")
   for _, key in ipairs(HANDS) do
     local on
     if config.mode == "pick" then

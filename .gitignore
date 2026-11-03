@@ -25,3 +25,7 @@ __pycache__/
 # Working notes, kept out of the repository
 TESTING.md
 hud-requirements.md
+
+# Generated for the CurseForge description (tools/curseforge_description.py)
+curseforge-description.html
+curseforge-description.md

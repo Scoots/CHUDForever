@@ -5,7 +5,7 @@
 -- rows, in order, each one of:
 --   { slider = label, min, max, step, get = function() -> number, set = function(value) }
 --   { choice = label, choices = { { value, label }, ... }, get, set }
---   { button = text, func }
+--   { button = text, func, stay = true to keep the panel open }
 local _, ns = ...
 
 local Popover = {}
@@ -159,7 +159,7 @@ end
 local function FillAction(button, data)
   button.text:SetText(data.button)
   button:SetScript("OnClick", function()
-    Popover.Close()
+    if not data.stay then Popover.Close() end
     data.func()
   end)
 end

@@ -786,6 +786,12 @@ local function BarPanel(bar, profile, mode, tabs)
     return items
   end)
   Note(TYPE_NOTES[kindShown] or TYPE_NOTES[kind])
+  if kind == "charges" then
+    local tracked = (bar.buttons or {})[1]
+    Dropdown("Buff", tracked and WithIcon(EntryIcon(tracked), EntryName(tracked)) or "Pick a buff", function()
+      return ns.EditMenu.ChargeChoices(bar)
+    end)
+  end
   if full and BUTTON_PAGES[kind] and #(bar.buttons or {}) > 0 then
     Note("What you set here is what every button starts with; a button with its own choice keeps it. Each button has its own page, listed under the bar on the left.")
   end
@@ -995,8 +1001,8 @@ local function HealthPanel(profile)
 end
 
 local function CastPanel(profile)
-  -- Profiles from before the cast bar get one under the power bar.
-  local cast = profile.cast or { width = 250, height = 16, x = 0, y = -170 }
+  -- Profiles from before the cast bar get the default one.
+  local cast = profile.cast or ns.DefaultMeters().cast
   profile.cast = cast
   Header("Cast bar")
   Checks({
@@ -2063,6 +2069,13 @@ local function GeneralPanel(profile)
     profile.voice = value
     ns.Sounds.Preview("say:Shield down", nil, nil, value)
   end)
+  Header("Ready pulse")
+  local pulse, pulseDefaults = ns.Pulse.Config(profile), ns.Pulse.DEFAULTS
+  Stepper("Size", pulse.size or pulseDefaults.size, 4, 32, 256, function(value) pulse.size = value end)
+  Stepper("Opacity %", math.floor((pulse.alpha or pulseDefaults.alpha) * 100 + 0.5), 5, 10, 100,
+    function(value) pulse.alpha = value / 100 end)
+  Action("Test", ns.Pulse.Test)
+  Note("Turn it on for a bar or a button with the Ready pulse behavior. Move it in edit mode.")
   Header("Edit mode")
   Checks({ { "Snap to grid", profile.snap ~= false, function() profile.snap = profile.snap == false end } })
   Stepper("Grid size", profile.gridSize or 8, 2, 4, 32, function(value) profile.gridSize = value end)

@@ -1,6 +1,6 @@
 -- Saved settings, building the HUD, event wiring and slash commands.
 --
--- Each character uses one profile (CombatHUDDB.chars[Name-Realm].profile),
+-- Each character uses one profile (CombatHUDDB.chars[Name-Realm-CLASS].profile),
 -- whatever its talents: on WoW Forever trees are filled freely, so there's no
 -- single spec to go by. A new character's profile has the whole class's
 -- spells, and the ones it doesn't know stay hidden. The spec is still
@@ -47,9 +47,17 @@ local function SpecsForClass(class)
   return list
 end
 
--- Points spent in one talent tree. Older clients return name, icon, points;
--- newer ones id, name, description, icon, points.
+-- Points spent in one talent tree. Forever has C_SpecializationInfo, whose 7th
+-- result is the points; GetTalentTabInfo only exists there with the game's old-API
+-- fallbacks on. On older clients it returns name, icon, points, and on newer ones
+-- id, name, description, icon, points.
 local function TreePoints(tab)
+  local info = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo
+  if info then
+    local answer = { pcall(info, tab) }
+    if answer[1] and not issecret(answer[8]) and type(answer[8]) == "number" then return answer[8] end
+  end
+  if not GetTalentTabInfo then return end
   local results = { pcall(GetTalentTabInfo, tab) }
   if not results[1] or issecret(results[2]) then return end
   local points
@@ -60,15 +68,30 @@ end
 -- The spec whose tree has the most points. ns.SPECS lists each class's specs
 -- in talent tree order.
 local function SpecFromTalentPoints(specs)
-  if not (GetNumTalentTabs and GetTalentTabInfo) then return end
-  local ok, trees = pcall(GetNumTalentTabs)
-  if not ok or issecret(trees) or type(trees) ~= "number" then return end
   local best, bestPoints = nil, 0
-  for tab = 1, math.min(trees, #specs) do
+  for tab = 1, #specs do
     local points = TreePoints(tab)
     if points and points > bestPoints then best, bestPoints = specs[tab], points end
   end
   return best
+end
+
+-- The spec with the most of its talent spells known (spec.talents), for when no
+-- tree's points can be read. A tie says nothing.
+local function SpecFromTalentSpells(specs)
+  local best, bestCount, tied = nil, 0, false
+  for _, spec in ipairs(specs) do
+    local count = 0
+    for _, spellID in ipairs(spec.talents or {}) do
+      if ns.IsSpellKnown(spellID) then count = count + 1 end
+    end
+    if count > bestCount then
+      best, bestCount, tied = spec, count, false
+    elseif count == bestCount and count > 0 then
+      tied = true
+    end
+  end
+  if not tied then return best end
 end
 
 -- The current spec key (e.g. "SHAMAN_ENHANCEMENT"), its ns.SPECS entry, and
@@ -85,6 +108,8 @@ function ns.GetSpec()
   end
   local spec = SpecFromTalentPoints(specs)
   if spec then return spec.key, spec, "talent points" end
+  spec = SpecFromTalentSpells(specs)
+  if spec then return spec.key, spec, "talent spells" end
   return class, nil, "not detected"
 end
 
@@ -223,6 +248,7 @@ function ns.Rebuild(force)
   ns.Health.Apply(ns.profile.health)
   ns.Cast.Apply(ns.profile.cast)
   ns.Swing.Apply(ns.profile.swing)
+  ns.Pulse.Apply()
   ns.Range.Scan()
   ns.RefreshCooldowns()
   ns.Sounds.Apply(ns.profile)
@@ -693,13 +719,8 @@ function ns.PrintDiag()
       ns.Print(("%s, %s (%d): %s"):format(spec.name, SpellLabel(spellID), spellID, ns.DescribeSpellKnown(spellID)))
     end
   end
-  if GetNumTalentTabs and GetTalentTabInfo then
-    local ok, trees = pcall(GetNumTalentTabs)
-    if ok and not issecret(trees) and type(trees) == "number" then
-      for tab = 1, trees do ns.Print(("Talent tree %d: %s points"):format(tab, tostring(TreePoints(tab)))) end
-    end
-  else
-    ns.Print("No talent tree functions on this client.")
+  for tab, spec in ipairs(SpecsForClass(class)) do
+    ns.Print(("Talent tree %d, %s: %s points"):format(tab, spec.name, tostring(TreePoints(tab))))
   end
   ns.Print(("Stormstrike (17364): %s"):format(ns.DescribeSpellKnown(17364)))
 end

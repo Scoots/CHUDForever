@@ -191,6 +191,7 @@ local function CooldownItems(btn)
     local debuff = { Toggle("Show my debuff's time on the target", opts.targetDebuff, Set("targetDebuff")) }
     Add(Sub(opts.targetDebuff and "Debuff on target: shown" or "Debuff on target", debuff))
   end
+  Add(Toggle("Pulse on screen when ready", opts.pulse, Set("pulse")))
   Add(AlertsMenu(btn))
   return items
 end
@@ -295,10 +296,75 @@ end
 
 -- Bars --------------------------------------------------------------------------------------
 
+-- The charges of whichever of these buffs is up: 0 when it's up without any,
+-- nil when none is up or the game won't say.
+local function ChargesUp(ids)
+  local getAura = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex
+  if not getAura then return end
+  local wanted = {}
+  for _, id in ipairs(ids) do wanted[id] = true end
+  for index = 1, 40 do
+    local ok, aura = pcall(getAura, "player", index, "HELPFUL|PLAYER")
+    if not ok or not aura or issecret(aura.spellId) then return end
+    if wanted[aura.spellId] then
+      if issecret(aura.applications) or type(aura.applications) ~= "number" then return end
+      return aura.applications
+    end
+  end
+end
+
+-- The buff on the list of buffs with charges (Defaults.lua) with this name, if any.
+local function KnownChargeBuff(name)
+  for _, buffs in pairs(ns.CHARGE_BUFFS) do
+    for _, buff in ipairs(buffs) do
+      if ns.SpellName(buff.ids[1]) == name then return buff end
+    end
+  end
+end
+
+-- A charge bar has one buff, so a new one takes the place of the old one. How
+-- many it holds goes on the bar, where its Most charges setting reads it.
+local function SetChargeBuff(config, ids, name, charges)
+  config.buttons = config.buttons or {}
+  local entry = config.buttons[1]
+  if not entry then
+    entry = {}
+    config.buttons[1] = entry
+  end
+  entry.aura, entry.spell, entry.pips = {}, nil, nil
+  for index, id in ipairs(ids) do entry.aura[index] = id end
+  if charges and charges > 0 then
+    config.buttonDefaults = config.buttonDefaults or {}
+    config.buttonDefaults.pips = charges
+  end
+  Changed()
+  ns.Print(("%s tracks %s, with room for %d charges. To change that: Most charges in its settings."):format(
+    config.name or "The bar", name, ns.Bar.Options(ns.profile or {}, config, entry).pips))
+end
+
+-- Puts a buff on a charge bar. It doesn't have to be up, so one you can't cast
+-- right now can still be picked; one that's up without charges is turned away.
+function EditMenu.TrackCharges(config, spellID)
+  local name = ns.SpellName(spellID) or "That buff"
+  local known = KnownChargeBuff(name)
+  if known then
+    SetChargeBuff(config, known.ids, name, known.charges)
+    return
+  end
+  local ids = { spellID }
+  for _, linked in ipairs(ns.Learn.Linked(name) or {}) do ids[#ids + 1] = linked end
+  local charges = ChargesUp(ids)
+  if charges == 0 then
+    ns.Print(("%s is up but has no charges, so it can't go on this bar."):format(name))
+    return
+  end
+  SetChargeBuff(config, ids, name, charges)
+end
+
 local function AddAura(config, spellID, name, unit)
   local kind = ns.Bar.Type(config)
-  if kind == "charges" and #(config.buttons or {}) >= 1 then
-    ns.Print("Buff With Charges only allows one spell.")
+  if kind == "charges" then
+    EditMenu.TrackCharges(config, spellID)
     return
   end
   if ns.Bar.Full(config) then
@@ -309,41 +375,18 @@ local function AddAura(config, spellID, name, unit)
   -- A cooldown bar needs to be told this one is an aura; the other bar types know.
   if kind == "cooldowns" then
     entry.unit, entry.show = unit, "active"
-  elseif kind == "charges" then
-    local getAura = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex
-    local found = false
-    if getAura then
-      for index = 1, 40 do
-        local ok, aura = pcall(getAura, "player", index, "HELPFUL|PLAYER")
-        if not ok or not aura or issecret(aura.spellId) then break end
-        if aura.spellId == spellID then
-          local apps = aura.applications
-          if type(apps) == "number" and apps > 0 then
-            found = true
-            entry.pips = math.max(1, math.floor(apps))
-          end
-          break
-        end
-      end
-    end
-    if not found then
-      ns.Print("That buff must be active with visible stacks/charges before adding it here.")
-      return
-    end
   end
   table.insert(config.buttons, entry)
   Changed()
-  if kind == "charges" and entry.pips then
-    ns.Print(("Added %s to %s (%d charges detected)." ):format(name, (config.name or "the bar"), entry.pips))
-  else
-    ns.Print("Added " .. name .. " to " .. (config.name or "the bar") .. ".")
-  end
+  ns.Print("Added " .. name .. " to " .. (config.name or "the bar") .. ".")
 end
 
 -- Buffs to add to a bar: the ones up now first, then the rest you've had
 -- (Learn.lua), so ones that only show up in combat can be added any time.
-local function BuffChoices(config)
-  local items, listed = {}, {}
+-- listed: names to leave out, when the menu already has them.
+local function BuffChoices(config, listed)
+  local items = {}
+  listed = listed or {}
   local getAura = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex
   for index = 1, 40 do
     if not getAura then break end
@@ -371,6 +414,29 @@ local function BuffChoices(config)
     end
   end
   if #items == 0 then items[1] = { text = "None seen yet", disabled = true } end
+  return items
+end
+
+-- What a charge bar can track: your class's buffs with charges first, whether
+-- they're up or not, then the buffs up now and the rest you've had.
+function EditMenu.ChargeChoices(config)
+  local _, class = UnitClass("player")
+  local items, listed = {}, {}
+  for _, buff in ipairs(not issecret(class) and ns.CHARGE_BUFFS[class] or {}) do
+    local id = buff.ids[1]
+    local name = ns.SpellName(id)
+    if name and ns.IsMyRace(buff.race) then
+      listed[name] = true
+      items[#items + 1] = {
+        text = name, icon = C_Spell.GetSpellTexture(id),
+        tooltip = function(row) ns.Learn.ShowTooltip(row, id) end,
+        func = function() EditMenu.TrackCharges(config, id) end,
+      }
+    end
+  end
+  for _, item in ipairs(BuffChoices(config, listed)) do
+    if not item.disabled or #items == 0 then items[#items + 1] = item end
+  end
   return items
 end
 
@@ -435,7 +501,7 @@ local function CurrentAuras(config, unit, filter)
 end
 
 -- Bar types that take buffs and debuffs added from the menu.
-local TAKES_AURAS = { cooldowns = true, buffs = true, debuffs = true, alerts = true, charges = true }
+local TAKES_AURAS = { cooldowns = true, buffs = true, debuffs = true, alerts = true }
 
 function EditMenu.ForBar(frame)
   local config = frame.config
@@ -456,6 +522,9 @@ function EditMenu.ForBar(frame)
     Add({ text = "Show all hidden buffs", disabled = not anyHidden,
       func = function() config.hide, config.exclude = nil, nil; Changed() end })
     Add({ text = "Manage buffs...", func = function() ns.Options.Open(config) end })
+  elseif kind == "charges" then
+    Add({ text = #(config.buttons or {}) > 0 and "Change the buff" or "Pick the buff",
+      submenu = function() return EditMenu.ChargeChoices(config) end })
   elseif TAKES_AURAS[kind] then
     Add(Sub("Add", {
       { text = "A buff", submenu = function() return BuffChoices(config) end },
@@ -534,5 +603,18 @@ function EditMenu.GearForMeter(key, label, config, gear)
       get = function() return config.show or ((ns.profile or {}).visibilityDefaults or {}).show or "always" end,
       set = function(value) config.show = value end },
     { button = "All settings...", func = function() ns.Options.Open(key) end },
+  })
+end
+
+-- The ready pulse's stand-in. Which buttons pulse is their "Ready pulse" behavior.
+function EditMenu.GearForPulse(gear)
+  local config, defaults = ns.Pulse.Config(), ns.Pulse.DEFAULTS
+  ns.Popover.Open(gear, "Ready pulse", {
+    { slider = "Size", min = 32, max = 256, step = 4, get = Number(function() return config.size end, defaults.size),
+      set = function(value) config.size = value end },
+    { slider = "Opacity %", min = 10, max = 100, step = 5,
+      get = function() return math.floor((config.alpha or defaults.alpha) * 100 + 0.5) end,
+      set = function(value) config.alpha = value / 100 end },
+    { button = "Test", stay = true, func = ns.Pulse.Test },
   })
 end

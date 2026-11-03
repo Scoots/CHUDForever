@@ -322,6 +322,19 @@ do
   })
 end
 
+-- Ready pulse ----------------------------------------------------------------------------------
+do
+  local isOn, enable, disable = Switch("pulse")
+  Add({
+    id = "pulse", group = "alert", title = "Ready pulse", blurb = "Its icon flashes big on screen when it's ready",
+    keys = { "pulse" }, applies = CooldownButton, isOn = isOn, enable = enable, disable = disable,
+    summary = function() return "Its icon flashes big on screen when it's ready" end,
+    draw = function(h)
+      h.Note("Every pulse shows in one spot. Move it in edit mode; set its size and opacity with its gear there or in the profile's settings.")
+    end,
+  })
+end
+
 -- Alerts --------------------------------------------------------------------------------------
 -- Like the game's "Add Alert": a trigger (applied, removed, ready, ready
 -- early, used) and a sound or a visual. Which triggers fit is Alerts.Triggers.

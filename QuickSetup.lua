@@ -67,18 +67,9 @@ local function SetPosition(key)
   for _, config in ipairs(Placed()) do config.y = (config.y or 0) + shift end
 end
 
--- A meter's settings; an older profile without them gets the default spot.
-local SPOTS = {
-  health = { width = 250, height = 14, x = 0, y = -134 },
-  cast = { width = 250, height = 16, x = 0, y = -170 },
-  swing = { width = 250, height = 14, x = 0, y = -190 },
-}
-
+-- A meter's settings; an older profile without them gets the default ones.
 function Meter(key)
-  if not profile[key] then
-    profile[key] = {}
-    for field, value in pairs(SPOTS[key] or {}) do profile[key][field] = value end
-  end
+  if not profile[key] then profile[key] = ns.DefaultMeters()[key] or {} end
   return profile[key]
 end
 

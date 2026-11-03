@@ -1,7 +1,7 @@
 -- Learning which buff a spell gives.
 --
 -- An ability often applies a buff with a different spell ID from its own
--- (Shamanistic Rage, Elemental Mastery...), and the aura widget matches by
+-- (Shamanistic Rage, Lightning Mastery...), and the aura widget matches by
 -- ID, so dropping the ability on an aura bar would track the wrong ID. Out of
 -- combat, buff data is readable, so the buff's ID is remembered for that
 -- spell (CombatHUDDB.auraLinks, by spell name, so every rank shares it):
@@ -111,12 +111,12 @@ local Readable = ns.AllReadable
 -- I've had". Only your own buffs (yours or your pet's) are kept, and ones not
 -- seen for FORGET_AFTER are dropped at login.
 local FORGET_AFTER = 60 * 24 * 3600
-local _, playerClass = UnitClass("player")
 
 local function Book()
-  if not CombatHUDDB then return {} end
+  -- Read each time: the class can't be relied on while the addon's files load.
+  local _, class = UnitClass("player")
+  if not CombatHUDDB or issecret(class) or not class then return {} end
   CombatHUDDB.buffBook = CombatHUDDB.buffBook or {}
-  local class = playerClass or "?"
   local book = CombatHUDDB.buffBook[class]
   if not book then
     book = {}

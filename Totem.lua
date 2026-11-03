@@ -564,12 +564,16 @@ ns.On("PLAYER_ENTERING_WORLD", function() ns.Schedule(RefreshAll) end)
 ns.On("SPELL_UPDATE_COOLDOWN", function() if next(items) then ns.Schedule(RefreshAll) end end)
 
 -- Your own cast says which totem went down, even when the slot is secret.
-local PROJECTION = "Totemic Projection"
+-- Totemic Call (Totemic Projection in the beta) brings your totems to you.
+local CALL = { ["Totemic Call"] = true, ["Totemic Projection"] = true }
 
 ns.OnUnit("UNIT_SPELLCAST_SUCCEEDED", "player", function(_, _, _, spellID)
   if issecret(spellID) or not spellID then return end
-  if SpellName(spellID) == PROJECTION then
-    wipe(drops) -- the totems moved to a spot we can't know
+  if CALL[SpellName(spellID)] then
+    local x, y, instance = PlayerPosition()
+    for slot in pairs(drops) do
+      drops[slot] = x and { x = x, y = y, instance = instance } or nil
+    end
     return
   end
   local slot = SlotForSpell(spellID)

@@ -1,6 +1,5 @@
 -- Shared cooldowns: one button for several spells or items that share a
--- cooldown (the shocks, a hunter's fire or frost traps, Fire and Frost Ward,
--- potions). The entry
+-- cooldown (the shocks, a hunter's traps, Fire and Frost Ward, potions). The entry
 -- lists the others in entry.group: spell IDs on a spell's button, item IDs on
 -- an item's. The button tracks its own spell if you know it, else the first
 -- member you know (an item button: the first one you carry). Its icon is the
@@ -19,11 +18,10 @@ Groups.FAMILIES = {
     ranks = { 8042, 8044, 8045, 8046, 10412, 10413, 10414, 8050, 8052, 8053, 10447, 10448, 29228,
       8056, 8058, 10472, 10473 } },
   -- Traps: every rank, and the debuffs they leave ("Immolation Trap Effect"...).
-  { name = "Fire traps", members = { 13795, 13813 }, -- Immolation, Explosive Trap
+  { name = "Traps", members = { 13795, 13813, 1499, 13809 }, -- Immolation, Explosive, Freezing, Frost Trap
     ranks = { 13795, 14302, 14303, 14304, 14305, 13797, 14298, 14299, 14300, 14301,
-      13813, 14316, 14317, 13812, 14314, 14315 } },
-  { name = "Frost traps", members = { 1499, 13809 }, -- Freezing, Frost Trap
-    ranks = { 1499, 14310, 14311, 3355, 14308, 14309, 13809, 13810 } },
+      13813, 14316, 14317, 13812, 14314, 14315,
+      1499, 14310, 14311, 3355, 14308, 14309, 13809, 13810 } },
   -- Curses: only one of yours on a target at a time (Bane of Doom has its own
   -- button, but its debuff counts here too). Forever calls Agony and Doom
   -- "Bane of", has new IDs for the Elements, and no Curse of Shadow.
@@ -35,6 +33,7 @@ Groups.FAMILIES = {
     ranks = { 1978, 13549, 13550, 13551, 13552, 13553, 13554, 13555, 25295, 3034, 14279, 14280,
       3043 } },
   { name = "Fire and Frost Ward", members = { 543, 6143 } },
+  { name = "Pummel and Shield Bash", members = { 6552, 72 } },
 }
 
 local GetItemSpell = (C_Item and C_Item.GetItemSpell) or GetItemSpell
@@ -229,7 +228,7 @@ end
 local SHOCK_RANKS = {}
 for _, id in ipairs(Groups.FAMILIES[1].ranks) do SHOCK_RANKS[id] = true end
 
-function Groups.MigrateProfile(profile)
+local function StackShocks(profile)
   for _, bar in ipairs(profile.bars or {}) do
     for _, entry in ipairs(bar.buttons or {}) do
       local first = type(entry.spell) == "table" and entry.spell[1] or entry.spell
@@ -242,8 +241,41 @@ function Groups.MigrateProfile(profile)
   end
 end
 
+-- Fire and frost traps had a cooldown each in the beta, so older bars have a
+-- button for each. All traps share one now, so they become one button.
+local TRAP_RANKS = {}
+for _, id in ipairs(Groups.FAMILIES[2].ranks) do TRAP_RANKS[id] = true end
+
+local function StackTraps(profile)
+  for _, bar in ipairs(profile.bars or {}) do
+    local entries, into, index = bar.buttons or {}, nil, 1
+    while index <= #entries do
+      local entry = entries[index]
+      local first = type(entry.spell) == "table" and entry.spell[1] or entry.spell
+      if not first or entry.aura or not TRAP_RANKS[first] then
+        index = index + 1
+      elseif not into then
+        into = entry
+        index = index + 1
+      else
+        for _, id in ipairs(Groups.Members(entry)) do Groups.Add(into, { spell = id }) end
+        table.remove(entries, index)
+      end
+    end
+  end
+end
+
+function Groups.MigrateProfile(profile)
+  StackShocks(profile)
+  StackTraps(profile)
+end
+
 function Groups.Migrate(db)
-  if db.groupsVersion == 1 then return end
-  db.groupsVersion = 1
-  for _, profile in pairs(db.profiles or {}) do Groups.MigrateProfile(profile) end
+  local version = db.groupsVersion or 0
+  if version >= 2 then return end
+  db.groupsVersion = 2
+  for _, profile in pairs(db.profiles or {}) do
+    if version < 1 then StackShocks(profile) end
+    StackTraps(profile)
+  end
 end

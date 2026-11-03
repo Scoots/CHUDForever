@@ -1,13 +1,13 @@
 -- Starting layouts built from your action bars, for specs without a built-in
 -- layout (and on request, from the Profiles page). The spells on your bars,
 -- hidden ones included, are the ones you use. The bars are the same as a
--- default profile's (Defaults.lua):
+-- default profile's (Defaults.lua), but Rotation and Cooldowns hold everything
+-- from your action bars, so there's no Utility, Traps or Taunts bar:
 --   My Active Buffs: every buff you cast on yourself, while up
 --   Rotation:     spells with a cooldown of 12 seconds or less, and damage fillers
 --   Cooldowns:    spells with a longer one
 --   Items:        trinkets and consumables, while on cooldown
---   Target:       your debuffs on the target, from the harmful spells on your bars
---   Totems:       for shamans
+--   The class's own: shields, totems, a charge bar, weapon enchants, missing buffs
 -- Other spells without a cooldown (buffs, heals) are left out; drop them on a
 -- bar if you want them.
 local _, ns = ...
@@ -46,31 +46,20 @@ end
 
 function Starter.Build()
   local _, class = UnitClass("player")
-  local rotation, long, debuffs = {}, {}, {}
+  local rotation, long = {}, {}
   local candidates = {}
   for _, spellID in ipairs(ActionBarSpells()) do
     local cooldown = BaseCooldown(spellID)
-    local harmful = Harmful(spellID)
     if cooldown and cooldown > 1.5 then
       candidates[#candidates + 1] = { spell = spellID }
-    elseif harmful and not IsAuto(spellID) then
+    elseif Harmful(spellID) and not IsAuto(spellID) then
       rotation[#rotation + 1] = { spell = spellID } -- a filler
     end
-    if harmful then table.insert(debuffs, { spell = spellID }) end
   end
   ns.SortByCooldown(candidates, rotation, long, long)
 
-  local NewBar = ns.NewBarConfig
   local bars = ns.StandardBars(rotation, long)
-  if #debuffs > 0 then
-    table.insert(bars, NewBar("Target", "debuffs", -10, 30, { dynamic = true, unit = "target", buttons = debuffs }))
-  end
-  if class == "SHAMAN" then
-    table.insert(bars, NewBar("Totems", "totems", -262, 30))
-  end
-  if class == "SHAMAN" or class == "ROGUE" then
-    table.insert(bars, NewBar("Weapons", "weapons", -300, 36))
-  end
+  ns.AddClassBars(bars, class, -219) -- no Utility bar here: the totems go right under Cooldowns
   local profile = ns.DefaultMeters()
   profile.bars = bars
   return profile

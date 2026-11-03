@@ -292,37 +292,13 @@ local function Drop(frame)
   end
   local kind = Bar.Type(frame.config)
   if kind == "charges" then
-    if entry.item or entry.slot then
+    SetGap(nil)
+    if entry.spell then
+      ns.EditMenu.TrackCharges(frame.config, entry.spell)
+    else
       ns.Print("Buff With Charges only takes spells that apply a buff with charges.")
-      return
     end
-    if #(frame.config.buttons or {}) >= 1 then
-      ns.Print("Buff With Charges only allows one spell.")
-      return
-    end
-    local getAura = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex
-    local found = false
-    if entry.spell and getAura then
-      local ids = { [entry.spell] = true }
-      local name = C_Spell.GetSpellName(entry.spell)
-      for _, linked in ipairs((name and ns.Learn.Linked(name)) or {}) do ids[linked] = true end
-      for index = 1, 40 do
-        local ok, aura = pcall(getAura, "player", index, "HELPFUL|PLAYER")
-        if not ok or not aura or issecret(aura.spellId) then break end
-        if ids[aura.spellId] then
-          local apps = aura.applications
-          if type(apps) == "number" and apps > 0 then
-            found = true
-            entry = { aura = { aura.spellId }, pips = math.max(1, math.floor(apps)) }
-          end
-          break
-        end
-      end
-    end
-    if not found then
-      ns.Print("That spell must be added while its charge buff is active (with visible stacks/charges).")
-      return
-    end
+    return
   end
   -- Shift or Alt held over a button: ask how to combine them.
   local onto = (IsShiftKeyDown() or IsAltKeyDown()) and ButtonUnderCursor(frame)
@@ -356,7 +332,7 @@ local function Drop(frame)
   ns.InsertButton(frame.config, configIndex, entry)
 
   -- On a buff bar the ability's own ID may not be its buff's ID.
-  if entry.spell and (kind == "buffs" or kind == "alerts" or kind == "charges") then
+  if entry.spell and (kind == "buffs" or kind == "alerts") then
     local name = C_Spell.GetSpellName(entry.spell)
     if name and not ns.Learn.Linked(name) then
       ns.Print(("If %s's buff doesn't show while it's up, cast %s once out of combat and CHUDForever will learn which buff it gives."):format(name, name))
@@ -634,6 +610,66 @@ local function Position(btn, frame, offset, lineOffset)
   Place(btn)
 end
 
+-- Buttons that only show in a form or while stealthed, on a bar that can't close
+-- gaps: its aura widgets can't move in combat, which is when forms change. So
+-- each button gets a spot that works whatever's showing. The ones that always
+-- show are in the middle, and each form's go beside them, one side then the
+-- other, sharing spots with other forms' since only one form shows at a time.
+-- With nothing always showing, a form's buttons are centered by themselves.
+-- Stealth-only ones go outside those. Returns the slots, by button index and
+-- measured from the bar's middle, and how many slots the bar reaches each way.
+function Bar.GatedSlots(buttons)
+  local always, forms, stealthed = {}, {}, {}
+  for index, btn in ipairs(buttons) do
+    local entry = btn.entry or {}
+    local form = entry.form ~= "feral" and entry.form or nil -- "feral" shares its forms, so it can't share spots
+    if form then
+      forms[form] = forms[form] or { plain = {}, stealth = {} }
+      local list = entry.stealthOnly and forms[form].stealth or forms[form].plain
+      list[#list + 1] = index
+    elseif entry.stealthOnly then
+      stealthed[#stealthed + 1] = index
+    else
+      always[#always + 1] = index
+    end
+  end
+  local slots, reach = {}, #always / 2
+  local function Center(list)
+    for position, index in ipairs(list) do slots[index] = position - (#list + 1) / 2 end
+  end
+  local function Outward(list, left, right)
+    for position, index in ipairs(list) do
+      if position % 2 == 1 then
+        slots[index], right = right + 0.5, right + 1
+      else
+        slots[index], left = left - 0.5, left - 1
+      end
+    end
+    return left, right
+  end
+  Center(always)
+  for _, group in pairs(forms) do
+    local left, right = -#always / 2, #always / 2
+    if #always == 0 then
+      Center(group.plain)
+      left, right = -#group.plain / 2, #group.plain / 2
+    else
+      left, right = Outward(group.plain, left, right)
+    end
+    left, right = Outward(group.stealth, left, right)
+    reach = math.max(reach, -left, right)
+  end
+  local left, right = Outward(stealthed, -reach, reach)
+  return slots, math.max(-left, right)
+end
+
+local function HasGated(frame)
+  for _, btn in ipairs(frame.buttons) do
+    if btn.entry and (btn.entry.form or btn.entry.stealthOnly) then return true end
+  end
+  return false
+end
+
 -- Lines the buttons up. On a bar that closes gaps, hidden buttons are left
 -- out (parked, invisible, under the first slot) and the bar shrinks around
 -- the rest; its anchor point keeps it in place. With animate, buttons that
@@ -649,6 +685,15 @@ function Layout(frame, animate)
   local across = frame.vertical and width or height
   local perLine = frame.perLine or 0
   local collapsing = frame.collapse and not ns.editMode
+  if not frame.collapse and not ns.editMode and perLine == 0 and frame.grow == "CENTER" and HasGated(frame) then
+    local slots, reach = Bar.GatedSlots(frame.buttons)
+    for index, btn in ipairs(frame.buttons) do
+      Position(btn, frame, math.floor((slots[index] + reach - 0.5) * frame.step + 0.5))
+    end
+    local length = reach * 2 * frame.step - spacing
+    if frame.vertical then frame:SetSize(across, length) else frame:SetSize(length, across) end
+    return
+  end
   local shown = 0
   for _, btn in ipairs(frame.buttons) do
     if btn == frame.lifted then
@@ -929,7 +974,8 @@ local function Build(frame, config, profile)
   for _, entry in ipairs(config.buttons) do
     if ModuleFor(config, entry) ~= ns.Button then collapse = false end
     -- A button showing a debuff on the target holds a game aura widget too.
-    if Options(profile, config, entry).targetDebuff then collapse = false end
+    local debuff = Options(profile, config, entry).targetDebuff
+    if debuff == true or (debuff == "auto" and entry.spell and ns.Debuff.EntryLeavesDebuff(entry)) then collapse = false end
   end
   frame.collapse = collapse
 
@@ -964,7 +1010,8 @@ local function Build(frame, config, profile)
   frame.anchor = AnchorFor(config, grow)
   ns.PlaceFrame(frame, config, frame.anchor)
   frame.mover.SetLabel(config.name or "Bar")
-  frame.mover.hint:SetText(kind == "allbuffs" and "Your own buffs show here" or "Drop spells here")
+  frame.mover.hint:SetText((kind == "allbuffs" and "Your own buffs show here")
+    or (kind == "charges" and "Right-click to pick a buff") or "Drop spells here")
   frame.mover.hint:SetShown((#frame.buttons == 0 and kind ~= "absorb" and kind ~= "weapons") or kind == "allbuffs")
   frame.mover:SetShown(ns.editMode)
   frame:Show()

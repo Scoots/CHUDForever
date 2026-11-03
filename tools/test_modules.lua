@@ -31,6 +31,7 @@ C_Item = { GetItemCount = function(id) return id == 2 and 5 or 0 end, GetItemSpe
 
 local ns = {}
 ns.issecret = function() return false end
+ns.SpellName = function(id) return SPELLS[id] end
 ns.Bar = { Type = function(config) return config.type or "cooldowns" end }
 ns.Button = { REACTIVE = { Overpower = true }, ItemIcon = function(id) return "item" .. id end }
 local known = { [17364] = true, [8042] = true, [8050] = true, [7384] = true }
@@ -115,13 +116,14 @@ do
   local profile, bar = Fixture()
   local spell = ids(Modules.ForContext(Modules.Context(profile, bar, bar.buttons[1])))
   for _, id in ipairs({ "cooldown", "manaCost", "group", "swap", "procGlow", "usableGlow", "rangeTint", "manaTint",
-    "earlyReady", "alerts", "targetDebuff" }) do
+    "earlyReady", "pulse", "alerts", "targetDebuff" }) do
     check(spell[id], "spell button offers " .. id)
   end
   check(not spell.aura and not spell.charges, "spell button: no aura or charges module")
 
   local item = ids(Modules.ForContext(Modules.Context(profile, bar, bar.buttons[3])))
-  check(item.cooldown and item.rangeTint and item.group and item.alerts, "item button: cooldown, range tint, shared cooldown, alerts")
+  check(item.cooldown and item.rangeTint and item.group and item.alerts and item.pulse,
+    "item button: cooldown, range tint, shared cooldown, alerts, pulse")
   for _, id in ipairs({ "manaCost", "procGlow", "usableGlow", "manaTint", "earlyReady", "targetDebuff", "swap" }) do
     check(not item[id], "item button doesn't offer " .. id)
   end
@@ -296,6 +298,15 @@ do
   local buttons = db.profiles.p.bars[1].buttons
   check(Groups.IsGroup(buttons[1]), "old shock button migrated")
   check(not Groups.IsGroup(buttons[2]), "other spells left alone")
+  -- Migration: a bar's fire and frost trap buttons become one, once.
+  db = { groupsVersion = 1, profiles = { p = { bars = { { buttons = {
+    { spell = 13795, group = { 13813 } }, { spell = 78 }, { spell = 1499, group = { 13809 } } } } } } } }
+  Groups.Migrate(db)
+  buttons = db.profiles.p.bars[1].buttons
+  equal(#buttons, 2, "trap buttons folded into one")
+  equal(#Groups.Members(buttons[1]), 4, "every trap on it")
+  equal(buttons[2].spell, 78, "other buttons stay")
+  equal(db.groupsVersion, 2, "migrated once")
 end
 
 -- Presets -------------------------------------------------------------------------------------------------

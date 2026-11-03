@@ -281,12 +281,30 @@ end
 -- The item of a { key, label, ... } list with this key, else its first item.
 ns.Find = Find
 
--- "Name-Realm" for this character (where its saved settings go), or nil if
--- it can't be read yet.
+-- Saved tables kept per character, by CharacterKey().
+local PER_CHARACTER = { "chars", "shieldPeaks", "shieldCasts" }
+local adopted
+
+-- "Name-Realm-CLASS" for this character (where its saved settings go), or nil
+-- if it can't be read yet. The class is in it so a new character with an old
+-- one's name (deleted and made again as another class, or a test server where
+-- every character has the same name) starts fresh instead of taking over the
+-- old one's profile.
 function ns.CharacterKey()
   local name, realm = UnitName("player"), GetRealmName()
-  if issecret(name) or issecret(realm) or not name then return end
-  return name .. "-" .. (realm or "")
+  local _, class = UnitClass("player")
+  if issecret(name) or issecret(realm) or issecret(class) or not name or not class then return end
+  local old = name .. "-" .. (realm or "")
+  local key = old .. "-" .. class
+  -- Keys used to be "Name-Realm": the first class to log in with that name keeps its settings.
+  if not adopted and CombatHUDDB then
+    adopted = true
+    for _, field in ipairs(PER_CHARACTER) do
+      local saved = CombatHUDDB[field]
+      if saved and saved[old] ~= nil and saved[key] == nil then saved[key], saved[old] = saved[old], nil end
+    end
+  end
+  return key
 end
 
 -- Timer text (aura and debuff time left) -----------------------------------------

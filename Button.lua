@@ -404,6 +404,7 @@ function Button.CooldownEnded(btn)
   local started, expected, snapshot = btn.cooldownStartedAt, btn.cooldownEnd, btn.cooldownSnapshot
   btn.cooldownStartedAt, btn.cooldownEnd, btn.cooldownSnapshot = nil, nil, nil
   if started and now - started < 1.6 then return end -- only the global cooldown
+  if btn.opts.pulse then ns.Pulse.Play(btn) end
 
   -- Was it early? true / false, or nil when only the game can tell.
   local early
@@ -526,14 +527,16 @@ function Button.Stealthed()
   return stealthed == true or stealthed == 1
 end
 
--- Druid forms: entry.form "cat", "bear" or "feral" (either). The game's form
--- IDs: 1 Cat, 5 Bear, 8 Dire Bear. If the form can't be read, taken as yes.
-local FORMS = { cat = { [1] = true }, bear = { [5] = true, [8] = true }, feral = { [1] = true, [5] = true, [8] = true } }
+-- Druid forms: entry.form "cat", "bear", "feral" (either) or "caster" (no form,
+-- Moonkin or Tree of Life). The game's form IDs: 1 Cat, 5 Bear, 8 Dire Bear, 2 Tree
+-- of Life, 31 Moonkin. If the form can't be read, taken as yes.
+local FORMS = { cat = { [1] = true }, bear = { [5] = true, [8] = true }, feral = { [1] = true, [5] = true, [8] = true }, caster = { [2] = true, [31] = true } }
 
 function Button.InForm(form)
   if not GetShapeshiftFormID or not FORMS[form] then return true end
   local id = GetShapeshiftFormID()
   if issecret(id) then return true end
+  if id == nil then return form == "caster" end
   return FORMS[form][id] == true
 end
 
@@ -706,7 +709,10 @@ function Button.RefreshCooldown(btn)
       btn.itemOnCooldown = true
     else
       btn.cd:Clear()
-      if btn.itemOnCooldown == true then ns.Alerts.Fire(btn, "ready") end
+      if btn.itemOnCooldown == true then
+        ns.Alerts.Fire(btn, "ready")
+        if btn.opts.pulse then ns.Pulse.Play(btn) end
+      end
       btn.itemOnCooldown = false
     end
     if btn.itemOnCooldown ~= nil then btn.onCooldown = btn.itemOnCooldown end
