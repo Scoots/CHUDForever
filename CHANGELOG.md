@@ -2,6 +2,23 @@
 
 All notable changes to CHUDForever. Versions follow the `## Version` line in `CHUDForever.toc`.
 
+## [0.19.0-beta4] - 11/13/2026
+
+### Added
+
+- **Hide the game's totem frame**: a setting on the Totems bar that hides the game's own totem icons under your portrait. Off by default; it's part of the profile.
+
+### Changed
+
+- **Ready pulse**: three times bigger and gentler. It fades in faintly (30% opacity), then swells as it fades out completely, in under a second. It always shows above the HUD, so it's no longer moved in edit mode. Its size and opacity are still in your profile's settings.
+- **Totem time left** is under each totem slot instead of on it, so it doesn't sit on top of the yards of reach.
+- **Which aura goes with which spell** is now a fixed list (Improved Stormstrike's buff with Stormstrike, Weakened Soul with Power Word: Shield, talent buffs like Maelstrom Weapon). It used to be learned from the buffs that appeared after a cast, which could pick the wrong one: Plainsrunning for Lightning Shield, say. What was learned before is forgotten.
+
+### Fixed
+
+- **Range tint** works for spells that aren't on an action bar. Forever no longer puts the spells you learn on one, so most spells never turned red out of range. Items still need to be on an action bar (a hidden bar is fine).
+- **Mana tint** turns blue as soon as you can't afford a spell. It only updated on an event Forever doesn't send for mana.
+
 ## [0.19.0-beta3] - 11/03/2026
 
 ### Added

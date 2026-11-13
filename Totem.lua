@@ -507,8 +507,13 @@ function Totem.Setup(item, entry, opts, size)
   item.cooldown:SetFrameLevel(item:GetFrameLevel() + 4)
   item.overlay:SetFrameLevel(item:GetFrameLevel() + 10)
   item.timer:SetHideCountdownNumbers(not opts.numbers)
+  -- Time left goes under the slot: the yards of reach are on it.
   local countdown = item.timer.GetCountdownFontString and item.timer:GetCountdownFontString()
-  if countdown then countdown:SetFont(ns.Font(), math.max(8, math.floor(size * 0.36)), "OUTLINE") end
+  if countdown then
+    countdown:SetFont(ns.Font(), math.max(8, math.floor(size * 0.3)), "OUTLINE")
+    countdown:ClearAllPoints()
+    countdown:SetPoint("TOP", item, "BOTTOM", 0, -2)
+  end
   item.label:SetText(ns.editMode and element.name or "")
   item.distance:SetFont(ns.Font(), math.max(8, math.floor(size * 0.3)), "OUTLINE")
   item.distance:SetText("")
@@ -585,6 +590,40 @@ ns.OnUnit("UNIT_SPELLCAST_SUCCEEDED", "player", function(_, _, _, spellID)
   StartTicker()
   ns.Schedule(RefreshAll)
 end)
+
+-- The game's totem frame --------------------------------------------------------------------
+-- It hangs under the player portrait. With the profile's hideTotemFrame, it's
+-- kept hidden: its events are switched off and it's hidden again if anything
+-- shows it. (It isn't a protected frame, so this works in combat too.)
+local GAME_EVENTS = { "PLAYER_TOTEM_UPDATE", "PLAYER_ENTERING_WORLD", "UPDATE_SHAPESHIFT_FORM",
+  "PLAYER_TALENT_UPDATE", "PLAYER_SPECIALIZATION_CHANGED" }
+local gameHidden, hooked = false, false
+
+function Totem.HidesGameFrame(profile)
+  profile = profile or ns.profile
+  return profile and profile.hideTotemFrame == true or false
+end
+
+function Totem.ApplyGameFrame()
+  local frame = _G.TotemFrame
+  if not frame then return end
+  local hide = Totem.HidesGameFrame()
+  if not hooked and frame.HookScript then
+    hooked = true
+    frame:HookScript("OnShow", function(self)
+      if gameHidden then self:Hide() end
+    end)
+  end
+  if hide == gameHidden then return end
+  gameHidden = hide
+  if hide then
+    frame:UnregisterAllEvents()
+    frame:Hide()
+  else
+    for _, event in ipairs(GAME_EVENTS) do pcall(frame.RegisterEvent, frame, event) end
+    if frame.Update then pcall(frame.Update, frame) end
+  end
+end
 
 -- /chud debug totems
 function Totem.PrintDiag()

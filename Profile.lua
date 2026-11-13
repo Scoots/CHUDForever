@@ -249,6 +249,7 @@ function ns.Rebuild(force)
   ns.Cast.Apply(ns.profile.cast)
   ns.Swing.Apply(ns.profile.swing)
   ns.Pulse.Apply()
+  ns.Totem.ApplyGameFrame()
   ns.Range.Scan()
   ns.RefreshCooldowns()
   ns.Sounds.Apply(ns.profile)
@@ -643,6 +644,9 @@ ns.On("PLAYER_EQUIPMENT_CHANGED", function() ns.Schedule(RebuildIfChanged) end)
 ns.On("SPELL_UPDATE_COOLDOWN", function() ns.Schedule(ns.RefreshCooldowns) end)
 ns.On("BAG_UPDATE_COOLDOWN", function() ns.Schedule(ns.RefreshCooldowns) end)
 ns.On("SPELL_UPDATE_USABLE", function() ns.Schedule(ns.RefreshTints) end)
+-- Forever's own action buttons follow these rather than SPELL_UPDATE_USABLE.
+ns.On("ACTION_USABLE_CHANGED", function() ns.Schedule(ns.RefreshTints) end)
+ns.OnUnit("UNIT_POWER_FREQUENT", "player", function() ns.Schedule(ns.RefreshTints) end)
 ns.On("PLAYER_TARGET_CHANGED", function() ns.Schedule(ns.RefreshTints) end)
 ns.OnUnit("UNIT_HEALTH", "target", function() ns.Schedule(ns.RefreshReactives) end)
 
@@ -793,15 +797,8 @@ local DEBUG = {
     run = function() ns.Swing.Probe() end },
   { name = "range", aliases = { "rangeprobe" }, help = "item and trinket buttons: their action bar slot and what the game reports about range",
     run = function() ns.Range.Probe() end },
-  { name = "links", help = "which buff each spell was learned to give (links clear: forget them)",
-    run = function(argument)
-      if argument == "clear" then
-        ns.Learn.Clear()
-        RebuildNow()
-      else
-        ns.Learn.Print()
-      end
-    end },
+  { name = "links", help = "which aura goes with which spell, where their IDs differ",
+    run = function() ns.Learn.Print() end },
   { name = "perf", help = "memory (and CPU, with script profiling on) next to other aura addons (perf reset: start counting)",
     run = function(argument) PrintPerf(argument) end },
   { name = "sound", help = "play an alert sound: blip, drop, bell, heartbeat, siren, raid, custom",

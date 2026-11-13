@@ -99,6 +99,7 @@ function Widget:GetFont() return "font", 12, "" end
 function Widget:SetTexture(texture) self.textureValue = texture end
 function Widget:GetTexture() return self.textureValue end
 function Widget:SetDesaturation(gray) self.grayValue = gray end
+function Widget:SetVertexColor(r, g, b) self.tint = { r, g, b } end
 function Widget:GetStatusBarTexture() self.fill = self.fill or NewWidget("Texture", self); return self.fill end
 function Widget:GetValue() return self.valueNumber or 0 end
 function Widget:SetValue(value) self.valueNumber = value end
@@ -188,7 +189,7 @@ local function SetUpGame()
   UnitClass = function() return scenario.class, scenario.class end
   UnitRace = function() return scenario.race, scenario.race, RACE_IDS[scenario.race] end
   UnitLevel = function() return 60 end
-  UnitExists = function(unit) return unit == "player" end
+  UnitExists = function(unit) return unit == "player" or (unit == "target" and scenario.target == true) end
   UnitGUID = function(unit) return "guid-" .. tostring(unit) end
   UnitPower, UnitPowerMax = function() return 50 end, function() return 100 end
   UnitPowerType = function() return 0, "MANA" end
@@ -240,7 +241,12 @@ local function SetUpGame()
     GetSpellCooldown = function() return { startTime = 0, duration = 0, isEnabled = true, isActive = false } end,
     GetSpellCharges = function() end,
     GetSpellPowerCost = function() return {} end,
-    IsSpellUsable = function() return true, false end,
+    IsSpellUsable = function(id)
+      if scenario.noMana and scenario.noMana[id] then return false, true end
+      return true, false
+    end,
+    EnableSpellRangeCheck = function(id, on) scenario.rangeChecked = scenario.rangeChecked or {}; scenario.rangeChecked[id] = on end,
+    IsSpellInRange = function() end,
     IsCurrentSpell = function() return false end,
   }
   C_SpellBook = { IsSpellKnown = Knows }
@@ -275,6 +281,18 @@ local function SetUpGame()
   UnitPosition = function() return 0, 0, 0, 0 end
   GetTotemInfo = function() return false end
   GetTotemDuration = function() return NewWidget("Duration") end
+  -- The game's totem frame under the portrait: its events and OnShow hooks are kept to look at.
+  TotemFrame = NewWidget("Frame")
+  TotemFrame.shownFlag, TotemFrame.events, TotemFrame.hooks, TotemFrame.updates = false, {}, {}, 0
+  function TotemFrame:RegisterEvent(event) self.events[event] = true end
+  function TotemFrame:UnregisterAllEvents() self.events = {} end
+  function TotemFrame:HookScript(name, fn) self.hooks[#self.hooks + 1] = { name, fn } end
+  function TotemFrame:Show()
+    self.shownFlag = true
+    for _, hook in ipairs(self.hooks) do if hook[1] == "OnShow" then hook[2](self) end end
+  end
+  function TotemFrame:Update() self.updates = self.updates + 1 end
+  for _, event in ipairs({ "PLAYER_TOTEM_UPDATE", "PLAYER_ENTERING_WORLD" }) do TotemFrame.events[event] = true end
   InterfaceOptions_AddCategory = function() end
   Settings = anything
 end
@@ -524,6 +542,51 @@ do
   NoErrors(ns, "a respec")
 end
 
+-- Range and mana tints ---------------------------------------------------------------------------
+
+do
+  local ns = Boot("SHAMAN", "Orc")
+  local bolt
+  for _, btn in ipairs(Bars(ns).Rotation.buttons) do
+    if btn.spellID == 403 then bolt = btn end
+  end
+  check(bolt ~= nil, "Lightning Bolt is on Rotation")
+  check(scenario.rangeChecked and scenario.rangeChecked[403], "the game is asked for Lightning Bolt's range, with no action bar")
+  Fire("SPELL_RANGE_CHECK_UPDATE", 403, false, true)
+  equal(bolt.icon.tint and bolt.icon.tint[1], 0.95, "out of range: red")
+  Fire("SPELL_RANGE_CHECK_UPDATE", 403, true, true)
+  equal(bolt.icon.tint and bolt.icon.tint[1], 1, "back in range: normal")
+  scenario.noMana = { [403] = true }
+  Fire("UNIT_POWER_FREQUENT", "player", "MANA")
+  Tick()
+  equal(bolt.icon.tint and bolt.icon.tint[1], 0.4, "not enough mana: blue, as soon as mana changes")
+  scenario.noMana = nil
+  Fire("UNIT_POWER_FREQUENT", "player", "MANA")
+  Tick()
+  equal(bolt.icon.tint and bolt.icon.tint[1], 1, "mana back: normal")
+  NoErrors(ns, "tints")
+
+  -- Auras that go with a spell are a fixed list, never learned from what appears after a cast.
+  CombatHUDDB.auraLinks = { ["Lightning Shield"] = { 12345 } }
+  ns.Rebuild(true)
+  equal(ns.Learn.Linked("Lightning Shield"), nil, "an old learned link (Plainsrunning on Lightning Shield) is gone")
+  equal(CombatHUDDB.auraLinks, nil, "and forgotten")
+  equal(ns.Learn.Linked("Power Word: Shield")[1], 6788, "Power Word: Shield goes with Weakened Soul")
+  equal(ns.Learn.Linked("Stormstrike")[1], 1238931, "Stormstrike goes with Improved Stormstrike's buff")
+  Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "cast", 324)
+  for _ = 1, 4 do Tick() end
+  for _, fn in ipairs(delayed) do fn() end
+  equal(ns.Learn.Linked("Lightning Shield"), nil, "casting Lightning Shield learns nothing")
+
+  equal(ns.Pulse.DEFAULTS.size, 240, "the ready pulse is three times its old size")
+  equal(ns.Pulse.DEFAULTS.alpha, 0.3, "and starts faint")
+  equal(ns.EditMenu.GearForPulse, nil, "the ready pulse has no edit-mode gear")
+  local ok, problem = pcall(ns.Pulse.Test)
+  check(ok, "the ready pulse plays: " .. tostring(problem))
+  for _ = 1, 12 do Tick() end
+  NoErrors(ns, "the ready pulse")
+end
+
 -- Class specifics --------------------------------------------------------------------------------
 
 do
@@ -584,6 +647,40 @@ do
   local shaman = Boot("SHAMAN", "Orc")
   local charges = Bars(shaman)["Buff With Charges"]
   check(charges and charges.config.x == Bars(shaman).Weapons.config.x, "Charges is centered over the left column")
+end
+
+-- Totems: the game's totem frame, and where the time left goes -----------------------------------
+
+do
+  local ns = Boot("SHAMAN", "Orc")
+  local totems = Bars(ns).Totems
+  check(totems and #totems.buttons == 4, "a shaman has four totem slots")
+  for _, item in ipairs(totems and totems.buttons or {}) do
+    local count = item.timer.count
+    local point, relative, relativePoint, _, y = count:GetPoint(1)
+    check(point == "TOP" and relative == item and relativePoint == "BOTTOM" and y < 0,
+      "a totem's time left is under its slot, not on it")
+  end
+  check(TotemFrame.events.PLAYER_TOTEM_UPDATE, "the game's totem frame is left alone by default")
+  TotemFrame:Show()
+  check(TotemFrame:IsShown(), "and can show")
+
+  ns.profile.hideTotemFrame = true
+  ns.Rebuild(true)
+  check(not TotemFrame:IsShown(), "Hide the game's totem frame: it hides")
+  check(next(TotemFrame.events) == nil, "and stops listening for totems")
+  TotemFrame:Show()
+  check(not TotemFrame:IsShown(), "and stays hidden if anything shows it")
+  ns.Rebuild(true)
+  check(not TotemFrame:IsShown(), "and after another build")
+
+  ns.profile.hideTotemFrame = nil
+  ns.Rebuild(true)
+  check(TotemFrame.events.PLAYER_TOTEM_UPDATE and TotemFrame.events.UPDATE_SHAPESHIFT_FORM, "turned off: its events come back")
+  check(TotemFrame.updates > 0, "and it updates itself")
+  TotemFrame:Show()
+  check(TotemFrame:IsShown(), "and it can show again")
+  NoErrors(ns, "hiding the game's totem frame")
 end
 
 -- Charge bars: picking a buff --------------------------------------------------------------------

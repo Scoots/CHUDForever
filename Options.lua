@@ -872,6 +872,10 @@ local function BarPanel(bar, profile, mode, tabs)
       { "Yards of reach left", Opt("totemDistance"), Toggle("totemDistance") },
     })
     Stepper("Extra reach", Opt("totemExtraRange"), 1, 0, 20, function(value) SetOpt("totemExtraRange", value) end)
+    Checks({ { "Hide the game's totem frame", ns.Totem.HidesGameFrame(profile), function()
+      profile.hideTotemFrame = not ns.Totem.HidesGameFrame(profile) or nil
+    end } })
+    Note("The game's own totem icons under your portrait. Part of the profile.")
   elseif kind == "weapons" then
     Header("Weapon enchants")
     Choice("Show", { { "alert", "When missing or low" }, { "always", "Always" } }, Opt("weaponShow"),
@@ -1200,7 +1204,15 @@ end
 -- Where the game's range check for a button comes from.
 local function RangeInfo(ctx)
   if ctx.layer ~= "button" or viewedName ~= ns.profileName then
-    Note("The game reports range for what's on an action bar, so each spell or item needs to be on one (a hidden bar is fine).")
+    if ns.Range.BySpell() then
+      Note("Spells report their own range. An item needs to be on an action bar (a hidden bar is fine).")
+    else
+      Note("The game reports range for what's on an action bar, so each spell or item needs to be on one (a hidden bar is fine).")
+    end
+    return
+  end
+  if ctx.entry.spell and ns.Range.BySpell() then
+    Note("The game reports this spell's range itself; it needn't be on an action bar.")
     return
   end
   local slot, hasRange = ns.Range.SlotFor(ctx.entry)
@@ -2071,11 +2083,11 @@ local function GeneralPanel(profile)
   end)
   Header("Ready pulse")
   local pulse, pulseDefaults = ns.Pulse.Config(profile), ns.Pulse.DEFAULTS
-  Stepper("Size", pulse.size or pulseDefaults.size, 4, 32, 256, function(value) pulse.size = value end)
+  Stepper("Size", pulse.size or pulseDefaults.size, 10, 60, 600, function(value) pulse.size = value end)
   Stepper("Opacity %", math.floor((pulse.alpha or pulseDefaults.alpha) * 100 + 0.5), 5, 10, 100,
     function(value) pulse.alpha = value / 100 end)
   Action("Test", ns.Pulse.Test)
-  Note("Turn it on for a bar or a button with the Ready pulse behavior. Move it in edit mode.")
+  Note("Turn it on for a bar or a button with the Ready pulse behavior. It shows above the HUD, over your character.")
   Header("Edit mode")
   Checks({ { "Snap to grid", profile.snap ~= false, function() profile.snap = profile.snap == false end } })
   Stepper("Grid size", profile.gridSize or 8, 2, 4, 32, function(value) profile.gridSize = value end)

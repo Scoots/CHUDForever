@@ -68,7 +68,7 @@ local function Sections()
     { "Spec detection (/chud debug spec)", ns.PrintDiag },
     { "Auras (/chud debug auras)", ns.Aura.PrintDiag },
     { "Item range (/chud debug range)", ns.Range.Probe },
-    { "Learned buffs (/chud debug links)", ns.Learn.Print },
+    { "Spell and aura pairs (/chud debug links)", ns.Learn.Print },
   }
   if Has("totems") then list[#list + 1] = { "Totems (/chud debug totems)", ns.Totem.PrintDiag } end
   if Has("weapons") then list[#list + 1] = { "Weapon enchants (/chud debug weapons)", ns.Weapons.PrintDiag } end

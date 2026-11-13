@@ -331,13 +331,6 @@ local function Drop(frame)
   local configIndex = target and target.configIndex or #frame.config.buttons + 1
   ns.InsertButton(frame.config, configIndex, entry)
 
-  -- On a buff bar the ability's own ID may not be its buff's ID.
-  if entry.spell and (kind == "buffs" or kind == "alerts") then
-    local name = C_Spell.GetSpellName(entry.spell)
-    if name and not ns.Learn.Linked(name) then
-      ns.Print(("If %s's buff doesn't show while it's up, cast %s once out of combat and CHUDForever will learn which buff it gives."):format(name, name))
-    end
-  end
 end
 
 local function OpenMenu(frame)

@@ -330,7 +330,7 @@ do
     keys = { "pulse" }, applies = CooldownButton, isOn = isOn, enable = enable, disable = disable,
     summary = function() return "Its icon flashes big on screen when it's ready" end,
     draw = function(h)
-      h.Note("Every pulse shows in one spot. Move it in edit mode; set its size and opacity with its gear there or in the profile's settings.")
+      h.Note("Every pulse shows in one spot, above the HUD. Set its size and opacity in the profile's settings.")
     end,
   })
 end

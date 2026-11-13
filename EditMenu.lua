@@ -606,15 +606,3 @@ function EditMenu.GearForMeter(key, label, config, gear)
   })
 end
 
--- The ready pulse's stand-in. Which buttons pulse is their "Ready pulse" behavior.
-function EditMenu.GearForPulse(gear)
-  local config, defaults = ns.Pulse.Config(), ns.Pulse.DEFAULTS
-  ns.Popover.Open(gear, "Ready pulse", {
-    { slider = "Size", min = 32, max = 256, step = 4, get = Number(function() return config.size end, defaults.size),
-      set = function(value) config.size = value end },
-    { slider = "Opacity %", min = 10, max = 100, step = 5,
-      get = function() return math.floor((config.alpha or defaults.alpha) * 100 + 0.5) end,
-      set = function(value) config.alpha = value / 100 end },
-    { button = "Test", stay = true, func = ns.Pulse.Test },
-  })
-end

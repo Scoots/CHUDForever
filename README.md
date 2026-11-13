@@ -14,7 +14,7 @@ A lightweight, display-only combat HUD for **WoW Forever**: cooldowns, procs, bu
 - **Bars for each job**: rotation, cooldowns, utility, taunts, traps and items, set up for every class.
 - **Aura bars**: your buffs while up (with a list of every buff you've had, to hide the ones you don't want), your debuffs on the target, and alerts when a buff is missing (no seal, no armor, Battle Shout, Thorns...).
 - **Charges** as segments, orbs or gems, and **shield absorbs** as a bar: yours, and a priest's shield on their target.
-- **Totem bar** (shaman): time left, the totem spell's cooldown, a pulse timer for Tremor, Grounding and the cleansing totems, and yards of reach left from where it landed.
+- **Totem bar** (shaman): time left, the totem spell's cooldown, a pulse timer for Tremor, Grounding and the cleansing totems, and yards of reach left from where it landed. It can also hide the game's totem icons under your portrait.
 - **Weapon enchants**: imbues and poisons, when missing or running low.
 - **Power, health and cast bars**, a **swing timer** for main hand, off hand and ranged, and the **5-second rule** spark on the mana bar.
 - **Alerts**: a sound, a spoken phrase or a flash when something is applied, removed, ready or used.

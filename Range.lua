@@ -1,9 +1,10 @@
--- Out-of-range tint. The client reports range changes for action bar slots
--- (ACTION_RANGE_CHECK_UPDATE), and on this client that report isn't secret in
--- combat. So each spell is matched to the action slots holding it (any rank),
--- and each item to the slots holding that item (a trinket button: whatever is
--- equipped in its slot); hidden bars count. One that isn't on any action bar
--- never shows as out of range.
+-- Out-of-range tint. Forever reports range for a spell itself
+-- (C_Spell.EnableSpellRangeCheck, SPELL_RANGE_CHECK_UPDATE), so a spell needn't
+-- be on an action bar: learned spells no longer go on one by themselves. Items,
+-- and spells on a client without that, use the action bar slots holding them
+-- (ACTION_RANGE_CHECK_UPDATE; hidden bars count; a trinket button: whatever is
+-- equipped in its slot). An item that isn't on any action bar never shows as
+-- out of range.
 local _, ns = ...
 local issecret = ns.issecret
 
@@ -13,6 +14,12 @@ ns.Range = Range
 local NUM_SLOTS = 180
 local owners = {}     -- action slot -> list of buttons showing what's in it
 local lastChecks = {} -- action slot -> whether its last range report checked range at all
+local spellOwners = {} -- spell name -> buttons showing it
+local checking = {}    -- spell ID -> true while the game reports its range to us
+
+local function BySpell()
+  return C_Spell and C_Spell.EnableSpellRangeCheck ~= nil
+end
 
 local function Apply(slot, outOfRange)
   local list = owners[slot]
@@ -23,6 +30,23 @@ local function Apply(slot, outOfRange)
       ns.Button.RefreshTint(btn)
     end
   end
+end
+
+local function ApplySpell(name, outOfRange)
+  for _, btn in ipairs(spellOwners[name] or {}) do
+    if btn.active and btn.outOfRange ~= outOfRange then
+      btn.outOfRange = outOfRange
+      ns.Button.RefreshTint(btn)
+    end
+  end
+end
+
+-- A spell's current range, when it can be read: out of range only when the client says so.
+local function SeedSpell(name, spellID)
+  if not C_Spell.IsSpellInRange then return end
+  local ok, inRange = pcall(C_Spell.IsSpellInRange, spellID)
+  if not ok or issecret(inRange) then return end
+  ApplySpell(name, inRange == false)
 end
 
 -- Reads a slot's current range: out of range only when the client says so.
@@ -61,15 +85,31 @@ end
 
 function Range.Scan()
   wipe(owners)
-  local byKey = {}
+  wipe(spellOwners)
+  local byKey, wanted = {}, {}
   for _, btn in ipairs(ns.activeButtons) do
     btn.rangeSlot = nil
     local key = btn.opts.rangeTint and ButtonKey(btn)
-    if key then
+    if key and btn.kind == "spell" and BySpell() then
+      btn.outOfRange = false
+      spellOwners[btn.spellName] = spellOwners[btn.spellName] or {}
+      table.insert(spellOwners[btn.spellName], btn)
+      wanted[btn.spellID] = btn.spellName
+    elseif key then
       btn.outOfRange = false
       byKey[key] = byKey[key] or {}
       table.insert(byKey[key], btn)
     end
+  end
+  for spellID in pairs(checking) do
+    if not wanted[spellID] then
+      pcall(C_Spell.EnableSpellRangeCheck, spellID, false)
+      checking[spellID] = nil
+    end
+  end
+  for spellID, name in pairs(wanted) do
+    if not checking[spellID] and pcall(C_Spell.EnableSpellRangeCheck, spellID, true) then checking[spellID] = true end
+    SeedSpell(name, spellID)
   end
   if not next(byKey) then return end
 
@@ -94,6 +134,9 @@ local function HasRange(slot)
   if not ok or issecret(has) then return lastChecks[slot] end
   return has == true or has == 1
 end
+
+-- Whether spells report their own range on this client (no action bar needed).
+Range.BySpell = BySpell
 
 -- For the settings window: the action slot a button with range tint was
 -- found on, and whether the game says it has a range.
@@ -142,8 +185,15 @@ ns.On("ACTION_RANGE_CHECK_UPDATE", function(_, slot, inRange, checksRange)
   Apply(slot, checksRange == true and inRange == false)
 end)
 
+ns.On("SPELL_RANGE_CHECK_UPDATE", function(_, spell, inRange, checksRange)
+  if issecret(spell) or issecret(inRange) or issecret(checksRange) then return end
+  local name = type(spell) == "number" and ns.SpellName(spell) or spell
+  if name then ApplySpell(name, checksRange == true and inRange == false) end
+end)
+
 ns.On("PLAYER_TARGET_CHANGED", function()
   for slot in pairs(owners) do Seed(slot) end
+  for spellID in pairs(checking) do SeedSpell(ns.SpellName(spellID), spellID) end
 end)
 
 ns.On("ACTIONBAR_SLOT_CHANGED", function()

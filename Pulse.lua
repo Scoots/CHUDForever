@@ -1,18 +1,18 @@
 -- Ready pulse: when a cooldown on a button with the "Ready pulse" behavior
--- comes back, its icon fades in big and see-through on the screen, then grows
--- as it fades away. Several at once play one after another.
+-- comes back, its icon fades in see-through above the HUD, then swells as it
+-- fades away completely, like a pulse. Several at once play one after another.
 --
--- Its size, opacity and place are the profile's (profile.pulse), shared by
--- every bar. In edit mode a stand-in shows where it goes, with a gear for its
--- size and opacity.
+-- Its size and opacity are the profile's (profile.pulse), shared by every bar.
+-- It always shows in the same spot, so it isn't moved in edit mode.
 local _, ns = ...
 
 local Pulse = {}
 ns.Pulse = Pulse
 
-Pulse.DEFAULTS = { size = 80, alpha = 0.5, x = 0, y = 120 }
-local FADE_IN, HOLD, FADE_OUT = 0.15, 0.35, 0.6
-local GROW = 0.25 -- how much bigger it gets while fading out
+Pulse.DEFAULTS = { size = 240, alpha = 0.3 }
+local X, Y = 0, 80 -- above the HUD, over the character
+local FADE_IN, DURATION = 0.15, 0.8 -- seconds to reach its opacity, and in all
+local START, GROW = 0.75, 0.5        -- size at the start (of the setting), and how much it swells
 local QUEUE_MAX = 4
 local STAND_IN = "Interface\\Icons\\INV_Misc_QuestionMark"
 
@@ -34,46 +34,39 @@ local function Setting(key)
   return value
 end
 
--- Between pulses: hidden, or the stand-in in edit mode.
-local function Rest()
-  playing = nil
-  frame.icon:SetSize(frame:GetSize())
-  if ns.editMode then
-    frame.icon:SetTexture(STAND_IN)
-    frame.icon:SetAlpha(Setting("alpha"))
-    frame:Show()
-  else
-    frame:Hide()
-  end
-end
-
 local function Next()
   local waiting = table.remove(queue, 1)
   if not waiting then
-    Rest()
+    playing = nil
+    frame:Hide()
     return
   end
   playing = { time = 0, alpha = Setting("alpha"), key = waiting.key }
   frame.icon:SetTexture(waiting.texture)
   frame.icon:SetAlpha(0)
+  frame.icon:SetSize(frame:GetWidth() * START, frame:GetWidth() * START)
   frame:Show()
 end
 
 local function Animate(_, elapsed)
   if not playing then return end
   playing.time = playing.time + elapsed
-  local t, alpha, grow = playing.time, playing.alpha, 0
-  if t < FADE_IN then
-    alpha = alpha * t / FADE_IN
-  elseif t >= FADE_IN + HOLD + FADE_OUT then
+  local t = playing.time
+  if t >= DURATION then
     Next()
     return
-  elseif t >= FADE_IN + HOLD then
-    local out = (t - FADE_IN - HOLD) / FADE_OUT
-    alpha, grow = alpha * (1 - out), GROW * out
+  end
+  -- Swells quickly at first, then slows; fades in, then all the way out.
+  local done = t / DURATION
+  local swell = 1 - (1 - done) * (1 - done)
+  local alpha
+  if t < FADE_IN then
+    alpha = playing.alpha * t / FADE_IN
+  else
+    alpha = playing.alpha * (1 - (t - FADE_IN) / (DURATION - FADE_IN))
   end
   frame.icon:SetAlpha(alpha)
-  local size = frame:GetWidth() * (1 + grow)
+  local size = frame:GetWidth() * (START + GROW * swell)
   frame.icon:SetSize(size, size)
 end
 
@@ -81,21 +74,17 @@ local function Layout()
   local size = math.floor(Setting("size") * (ns.profile and ns.profile.scale or 1) + 0.5)
   frame:SetSize(size, size)
   frame:ClearAllPoints()
-  frame:SetPoint("CENTER", UIParent, "CENTER", Setting("x"), Setting("y"))
-  frame.mover:SetShown(ns.editMode)
+  frame:SetPoint("CENTER", UIParent, "CENTER", X, Y)
 end
 
 local function Create()
   frame = CreateFrame("Frame", nil, UIParent)
   frame:EnableMouse(false)
+  frame:SetFrameStrata("HIGH")
   frame.icon = frame:CreateTexture(nil, "ARTWORK")
   frame.icon:SetPoint("CENTER")
   frame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
   frame:SetScript("OnUpdate", Animate)
-  ns.AttachMover(frame, function() return Pulse.Config() end, function() return "CENTER" end, {
-    onGear = function(gear) ns.EditMenu.GearForPulse(gear) end,
-  })
-  frame.mover.SetLabel("Ready pulse")
   Layout()
   frame:Hide()
 end
@@ -131,12 +120,7 @@ function Pulse.Test()
   Enqueue("test", texture)
 end
 
--- After each build: size and place from the profile, and the stand-in in edit mode.
+-- After each build: the size from the profile.
 function Pulse.Apply()
-  if not frame then
-    if not ns.editMode then return end -- built on the first pulse
-    Create()
-  end
-  Layout()
-  if not playing then Rest() end
+  if frame then Layout() end
 end

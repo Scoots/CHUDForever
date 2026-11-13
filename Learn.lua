@@ -1,106 +1,36 @@
--- Learning which buff a spell gives.
+-- Which aura a spell goes with, when the aura's ID isn't the spell's own: a fixed
+-- list (LINKS, by spell name, so every rank shares it). It used to be learned from
+-- the buffs that appeared after a cast, but that picked up whatever else landed then
+-- (Plainsrunning on Lightning Shield, say).
 --
--- An ability often applies a buff with a different spell ID from its own
--- (Shamanistic Rage, Lightning Mastery...), and the aura widget matches by
--- ID, so dropping the ability on an aura bar would track the wrong ID. Out of
--- combat, buff data is readable, so the buff's ID is remembered for that
--- spell (CombatHUDDB.auraLinks, by spell name, so every rank shares it):
---   - after you cast a spell that's on an aura bar, from the buffs of yours
---     that appeared right then (same name or icon first; otherwise the only
---     new one, since out of combat nothing else is likely to land then)
---   - when the HUD is built, from buffs already up with the same name or icon
+-- Also: every buff of yours seen, for the every-buff bar's list (the buff book).
 local _, ns = ...
 local issecret = ns.issecret
 
 local Learn = {}
 ns.Learn = Learn
 
--- Spells on aura bars: name -> { icon = fileID, ids = set of IDs already tracked }.
-local wanted = {}
+-- Spell name -> the aura IDs that go with it.
+local LINKS = {
+  ["Stormstrike"] = { 1238931 },           -- Improved Stormstrike's buff
+  ["Power Word: Shield"] = { 6788 },       -- Weakened Soul
+  ["Maelstrom Weapon"] = { 408505 },       -- the talent's buff
+  ["Elemental Devastation"] = { 30165 },   -- the talent's buff
+  ["Flurry"] = { 16257 },                  -- the shaman talent's buff
+}
+Learn.LINKS = LINKS
 
--- Buff IDs learned for a spell name, or nil.
+-- The aura IDs that go with a spell name, or nil.
 function Learn.Linked(name)
-  local links = CombatHUDDB and CombatHUDDB.auraLinks
-  if not links or not name or issecret(name) then return end
-  return links[name]
-end
-
-local function Remember(spellName, auraID, auraName)
-  CombatHUDDB.auraLinks = CombatHUDDB.auraLinks or {}
-  local list = CombatHUDDB.auraLinks[spellName] or {}
-  CombatHUDDB.auraLinks[spellName] = list
-  for _, id in ipairs(list) do
-    if id == auraID then return false end
-  end
-  table.insert(list, auraID)
-  ns.Print(("Learned that %s gives the buff %s (%d)."):format(spellName, auraName, auraID))
-  return true
-end
-
--- Looks through your current buffs for ones matching wanted spells (all of
--- them, or only onlyName). Returns true if anything new was learned.
-local function ScanBuffs(onlyName)
-  local getAura = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex
-  if not getAura or InCombatLockdown() or not next(wanted) then return false end
-  local learned = false
-  for index = 1, 40 do
-    local ok, aura = pcall(getAura, "player", index, "HELPFUL|PLAYER")
-    if not ok or not aura then break end
-    local id, name, icon = aura.spellId, aura.name, aura.icon
-    if issecret(id) or issecret(name) or issecret(icon) then break end
-    for spellName, spell in pairs(wanted) do
-      local matches = name == spellName or (icon ~= nil and icon == spell.icon)
-      if (not onlyName or spellName == onlyName) and matches and not spell.ids[id] then
-        if Remember(spellName, id, name) then
-          spell.ids[id] = true
-          learned = true
-        end
-      end
-    end
-  end
-  return learned
-end
-
--- quiet: don't report casts that taught nothing (totems: many have no buff).
-local function AddWanted(spell, ids, quiet)
-  if type(spell) == "table" then
-    for _, id in ipairs(spell) do AddWanted(id, ids, quiet) end
-    return
-  end
-  if type(spell) ~= "number" then return end
-  local name = C_Spell.GetSpellName(spell)
   if not name or issecret(name) then return end
-  local entry = wanted[name] or { icon = C_Spell.GetSpellTexture(spell), ids = {}, quiet = quiet }
-  wanted[name] = entry
-  for id in pairs(ids) do entry.ids[id] = true end
+  return LINKS[name]
 end
 
--- Called before each build (out of combat): notes which spells sit on aura
--- bars and learns from buffs that are already up.
-function Learn.Prepare(profile)
-  wipe(wanted)
-  for _, bar in ipairs(profile.bars or {}) do
-    local kind = ns.Bar.Type(bar)
-    -- Totems' buffs, for the totem bar's range check.
-    if kind == "totems" then
-      for _, spellID in ipairs(ns.Totem.KnownSpells()) do AddWanted(spellID, ns.Totem.BuffSet(spellID), true) end
-    end
-    for _, entry in ipairs(bar.buttons or {}) do
-      -- Buffs on you only; debuffs on the target are left alone.
-      local aura = kind == "buffs" or kind == "alerts" or kind == "charges"
-        or (kind == "cooldowns" and (entry.aura or entry.watchAura == true))
-      if aura and entry.unit ~= "target" and not entry.slot and not entry.item then
-        local ids = ns.Aura.SpellIDs(entry)
-        AddWanted(entry.spell, ids)
-        AddWanted(entry.aura, ids)
-      end
-    end
-  end
-  ScanBuffs(nil)
+-- Called before each build. Links used to be learned here; the old learned ones
+-- are forgotten once, since some were wrong.
+function Learn.Prepare()
+  if CombatHUDDB and CombatHUDDB.auraLinks then CombatHUDDB.auraLinks = nil end
 end
-
--- Buffs of yours added in the last few seconds: { id, name, icon, time }.
-local recent = {}
 
 local Readable = ns.AllReadable
 
@@ -294,17 +224,13 @@ end)
 
 ns.OnUnit("UNIT_AURA", "player", function(_, _, info)
   if issecret(info) or not info or issecret(info.addedAuras) or not info.addedAuras then return end
-  local now = GetTime()
-  local learning = not InCombatLockdown() and next(wanted)
   for _, aura in ipairs(info.addedAuras) do
     local id, name, icon = aura.spellId, aura.name, aura.icon
     local helpful, mine = aura.isHelpful, aura.isFromPlayerOrPlayerPet
     if Readable(id, name, icon, helpful, mine) and helpful ~= false and mine ~= false and id then
       RememberSeen(id, name, icon, aura.duration)
-      if learning then table.insert(recent, { id = id, name = name, icon = icon, time = now }) end
     end
   end
-  while recent[1] and now - recent[1].time > 3 do table.remove(recent, 1) end
 end)
 
 -- Buffs still up when combat ends are readable again.
@@ -321,63 +247,8 @@ ns.On("PLAYER_REGEN_ENABLED", ScanBuffs)
 -- At login too, for the durations of buffs you already have.
 ns.On("PLAYER_ENTERING_WORLD", function() C_Timer.After(3, ScanBuffs) end)
 
--- Picks the buff a cast gave from the buffs that appeared around it.
-local function LearnFromCast(spellName, castTime)
-  local spell = wanted[spellName]
-  if not spell or InCombatLockdown() then return end
-  local candidates, matching = {}, {}
-  for _, aura in ipairs(recent) do
-    if aura.time >= castTime - 0.5 and aura.time <= castTime + 0.6 then
-      table.insert(candidates, aura)
-      if aura.name == spellName or (spell.icon ~= nil and aura.icon == spell.icon) then table.insert(matching, aura) end
-    end
-  end
-  local chosen = matching
-  if #chosen == 0 and #candidates == 1 then chosen = candidates end
-
-  local learned, tracked = false, false
-  for _, aura in ipairs(chosen) do
-    if spell.ids[aura.id] then
-      tracked = true
-    elseif Remember(spellName, aura.id, aura.name) then
-      spell.ids[aura.id] = true
-      learned = true
-    end
-  end
-  if learned then
-    ns.Rebuild(true)
-  elseif not tracked and #chosen == 0 then
-    -- Also covers buffs already up before the cast (a refresh adds nothing new).
-    if not ScanBuffs(spellName) then
-      if spell.quiet then
-        -- Nothing to say.
-      elseif #candidates == 0 then
-        ns.Print(("Cast %s, but no new buff of yours appeared, so there was nothing to learn."):format(spellName))
-      else
-        ns.Print(("Cast %s and %d buffs appeared at once; couldn't tell which is its own. Right-click the bar in edit mode and use \"Add a buff I have now\"."):format(spellName, #candidates))
-      end
-    else
-      ns.Rebuild(true)
-    end
-  end
-end
-
--- After you cast a spell that's on an aura bar, look for its buff.
-ns.OnUnit("UNIT_SPELLCAST_SUCCEEDED", "player", function(_, _, _, spellID)
-  if issecret(spellID) or not spellID or InCombatLockdown() then return end
-  local name = C_Spell.GetSpellName(spellID)
-  if not name or issecret(name) or not wanted[name] then return end
-  local castTime = GetTime()
-  C_Timer.After(0.6, function() LearnFromCast(name, castTime) end)
-end)
-
 function Learn.Print()
-  local links = CombatHUDDB and CombatHUDDB.auraLinks
-  if not links or not next(links) then
-    ns.Print("No buffs learned yet.")
-    return
-  end
-  for spellName, ids in pairs(links) do
+  for spellName, ids in pairs(LINKS) do
     local parts = {}
     for _, id in ipairs(ids) do
       local name = C_Spell.GetSpellName(id)
@@ -387,7 +258,3 @@ function Learn.Print()
   end
 end
 
-function Learn.Clear()
-  if CombatHUDDB then CombatHUDDB.auraLinks = {} end
-  ns.Print("Forgot all learned buffs.")
-end
